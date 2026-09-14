@@ -65,10 +65,27 @@ Writes to `build/web/`. That directory carries a `.gdignore` so Godot does not
 import its own output back into the project — without it, the export sweeps
 copies of its own icons into the pack.
 
-Serving the build needs the two cross-origin isolation headers
-(`Cross-Origin-Opener-Policy: same-origin`,
-`Cross-Origin-Embedder-Policy: require-corp`); opening `index.html` off the
-filesystem will not work.
+The preset builds the single-threaded Web variant, so the output needs no
+cross-origin isolation headers and runs on any static host. It does have to be
+served over HTTP, though — opening `index.html` off the filesystem will not
+work. To try it locally:
+
+```sh
+python3 -m http.server -d build/web 8000   # then open http://localhost:8000
+```
+
+## Deployment
+
+`.github/workflows/pages.yml` publishes `build/web/` to GitHub Pages on every
+push to `main` that touches it, and can be run by hand from the Actions tab.
+It uploads the committed export as-is; nothing is compiled in CI, so it needs
+neither Godot nor the export templates.
+
+For this to do anything, **Pages must be set to deploy from GitHub Actions**:
+Settings → Pages → Build and deployment → Source → *GitHub Actions*. Left on
+"Deploy from a branch" the workflow runs and fails at the deploy step.
+
+So the release loop is: export locally, commit `build/web/`, push to `main`.
 
 ## About this source tree
 
