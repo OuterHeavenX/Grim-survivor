@@ -1,84 +1,128 @@
 extends SceneTree
-# Builds the enemy walk-cycle atlases in assets/sprites/ from the raw CraftPix
-# animation frames in assets/packs/.
+# Builds the enemy walk and death atlases in assets/sprites/ from the raw
+# CraftPix animation frames in assets/packs/.
 #
 #   godot --headless --path . --script res://tools/build_sprites.gd
 #
 # The source frames are 384-2274 px tall, but enemies are drawn at roughly three
-# times their body radius (52-180 px), so shipping them raw would put hundreds of
+# times their body radius (38-180 px), so shipping them raw would put hundreds of
 # megabytes of unused resolution into index.pck. Each frame is downscaled to the
-# size it is actually drawn at and packed into one horizontal strip per enemy.
+# size it is actually drawn at and packed into one horizontal strip.
+#
+# Death frames are scaled by the SAME factor as that enemy's walk frames rather
+# than to a fixed height: a death pose sprawls, so forcing it to the walk height
+# would shrink the corpse relative to the living body.
 
 const PACKS := "res://assets/packs/"
 const ZOMBIES := PACKS + "top-down-zombies/Zombies/PNG Animations/"
 const BOSSES := PACKS + "topdown-bosses/Monsters/PNG Animations/"
 
-# enemy type -> [source walk directory, drawn height in pixels]
+# enemy type -> [character directory, drawn walk height in px]
 # Heights are body_radius * 3.2, matching how large the procedural art read.
 const SETS := {
-	"skeleton":   [ZOMBIES + "1LVL/Zombie3_male/Walk", 52],
-	"husk":       [ZOMBIES + "1LVL/Zombie4_male/Walk", 78],
-	"wisp":       [ZOMBIES + "1LVL/Zombie1_female/Walk", 42],
-	"bogling":    [ZOMBIES + "1LVL/Zombie2_female/Walk", 42],
-	"mire":       [ZOMBIES + "2LVL/Army_zombie/Walk", 90],
-	"imp":        [ZOMBIES + "2LVL/Cop_Zombie/Walk", 38],
-	"titan":      [BOSSES + "3LVL/Zombie_big_hands/Walk", 110],
-	"herald":     [BOSSES + "4LVL/Boss1/Walk", 141],
-	"maw":        [BOSSES + "4LVL/Boss2/Walk", 160],
-	"cinderking": [BOSSES + "5LVL/Walk", 180],
+	"skeleton":   [ZOMBIES + "1LVL/Zombie3_male", 52],
+	"husk":       [ZOMBIES + "1LVL/Zombie4_male", 78],
+	"wisp":       [ZOMBIES + "1LVL/Zombie1_female", 42],
+	"bogling":    [ZOMBIES + "1LVL/Zombie2_female", 42],
+	"mire":       [ZOMBIES + "2LVL/Army_zombie", 90],
+	"imp":        [ZOMBIES + "2LVL/Cop_Zombie", 38],
+	"titan":      [BOSSES + "3LVL/Zombie_big_hands", 110],
+	"herald":     [BOSSES + "4LVL/Boss1", 141],
+	"maw":        [BOSSES + "4LVL/Boss2", 160],
+	"cinderking": [BOSSES + "5LVL", 180],
 }
 
+
+func _frames_in(dir_path: String) -> Array:
+	var da := DirAccess.open(dir_path)
+	if da == null:
+		return []
+	var names := []
+	for f in da.get_files():
+		if f.to_lower().ends_with(".png"):
+			names.append(f)
+	names.sort()
+	return names
+
+
+func _build(dir_path: String, names: Array, scale: float) -> Array:
+	# Returns [Image sheet, frame_count, cell_w, cell_h], or [] on failure.
+	var frames := []
+	for n in names:
+		var img := Image.load_from_file(dir_path + "/" + n)
+		if img == null:
+			continue
+		img.convert(Image.FORMAT_RGBA8)
+		var w := maxi(1, int(round(img.get_width() * scale)))
+		var h := maxi(1, int(round(img.get_height() * scale)))
+		img.resize(w, h, Image.INTERPOLATE_LANCZOS)
+		frames.append(img)
+	if frames.is_empty():
+		return []
+	var fw := 0
+	var fh := 0
+	for img in frames:
+		fw = maxi(fw, img.get_width())
+		fh = maxi(fh, img.get_height())
+	var sheet := Image.create(fw * frames.size(), fh, false, Image.FORMAT_RGBA8)
+	sheet.fill(Color(0, 0, 0, 0))
+	for i in frames.size():
+		var img: Image = frames[i]
+		# Centre each frame in its cell so the character does not jitter.
+		var x := i * fw + int((fw - img.get_width()) * 0.5)
+		var y := int((fh - img.get_height()) * 0.5)
+		sheet.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), Vector2i(x, y))
+	return [sheet, frames.size(), fw, fh]
+
+
+func _emit(sheet: Image, out: String) -> int:
+	sheet.save_png(out)
+	return FileAccess.open(out, FileAccess.READ).get_length()
+
+
 func _initialize() -> void:
-	var manifest := {}
+	var walk_counts := {}
+	var death_counts := {}
 	var total := 0
+
 	for etype in SETS:
-		var dir_path: String = SETS[etype][0]
-		var target_h: int = SETS[etype][1]
-		var da := DirAccess.open(dir_path)
-		if da == null:
-			printerr("missing: ", dir_path)
+		var base: String = SETS[etype][0]
+		var walk_h: int = SETS[etype][1]
+
+		var walk_names := _frames_in(base + "/Walk")
+		if walk_names.is_empty():
+			printerr("no walk frames for ", etype, " in ", base)
 			continue
-		var names := []
-		for f in da.get_files():
-			if f.to_lower().ends_with(".png"):
-				names.append(f)
-		names.sort()
-		if names.is_empty():
-			printerr("no frames in ", dir_path)
+		var probe := Image.load_from_file(base + "/Walk/" + walk_names[0])
+		if probe == null:
+			printerr("cannot read first walk frame for ", etype)
 			continue
+		var scale := float(walk_h) / float(probe.get_height())
 
-		var frames := []
-		for n in names:
-			var img := Image.load_from_file(dir_path + "/" + n)
-			if img == null:
-				printerr("load failed: ", n)
-				continue
-			img.convert(Image.FORMAT_RGBA8)
-			var scale := float(target_h) / float(img.get_height())
-			var w := maxi(1, int(round(img.get_width() * scale)))
-			img.resize(w, target_h, Image.INTERPOLATE_LANCZOS)
-			frames.append(img)
-
-		var fw := 0
-		for img in frames:
-			fw = maxi(fw, img.get_width())
-		var sheet := Image.create(fw * frames.size(), target_h, false, Image.FORMAT_RGBA8)
-		sheet.fill(Color(0, 0, 0, 0))
-		for i in frames.size():
-			var img: Image = frames[i]
-			# Centre each frame in its cell so the character does not jitter.
-			var x := i * fw + int((fw - img.get_width()) * 0.5)
-			sheet.blit_rect(img, Rect2i(Vector2i.ZERO, img.get_size()), Vector2i(x, 0))
-
-		var out := "res://assets/sprites/%s_walk.png" % etype
-		sheet.save_png(out)
-		var bytes := FileAccess.open(out, FileAccess.READ).get_length()
+		var walk := _build(base + "/Walk", walk_names, scale)
+		if walk.is_empty():
+			continue
+		var bytes := _emit(walk[0], "res://assets/sprites/%s_walk.png" % etype)
 		total += bytes
-		manifest[etype] = {"frames": frames.size(), "frame_w": fw, "frame_h": target_h}
-		print("%-11s %2d frames  %4dx%-4d cell  %6.1f KB" % [etype, frames.size(), fw, target_h, bytes / 1024.0])
+		walk_counts[etype] = walk[1]
+		print("%-11s walk  %2d frames %4dx%-4d %7.1f KB" % [etype, walk[1], walk[2], walk[3], bytes / 1024.0])
+
+		var death_names := _frames_in(base + "/Death")
+		if death_names.is_empty():
+			printerr("  no death frames for ", etype)
+			continue
+		var death := _build(base + "/Death", death_names, scale)
+		if death.is_empty():
+			continue
+		bytes = _emit(death[0], "res://assets/sprites/%s_death.png" % etype)
+		total += bytes
+		death_counts[etype] = death[1]
+		print("%-11s death %2d frames %4dx%-4d %7.1f KB" % ["", death[1], death[2], death[3], bytes / 1024.0])
 
 	var f := FileAccess.open("res://assets/sprites/manifest.json", FileAccess.WRITE)
-	f.store_string(JSON.stringify(manifest, "\t"))
+	f.store_string(JSON.stringify({"walk": walk_counts, "death": death_counts}, "\t"))
 	f.close()
-	print("TOTAL: %.2f MB across %d sheets" % [total / 1048576.0, manifest.size()])
+	print("TOTAL: %.2f MB  (%d walk sheets, %d death sheets)" % [total / 1048576.0, walk_counts.size(), death_counts.size()])
+	print("WALK_SHEETS := ", walk_counts)
+	print("DEATH_SHEETS := ", death_counts)
 	quit()

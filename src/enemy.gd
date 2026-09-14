@@ -198,7 +198,7 @@ func take_damage(amount: float, from_pos: Vector2, knockback: float) -> void:
 		dead = true
 		died.emit()
 		am.play_ranged("enemy_die", -8.0, 0.9, 1.15)
-		jm.death_fx(global_position, is_boss())
+		jm.death_fx(global_position, is_boss(), etype, _spr_facing)
 		if main and main.has_method("spawn_gem"):
 			main.spawn_gem(global_position, xp_value)
 		if main and main.has_method("spawn_shard"):
