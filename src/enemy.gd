@@ -156,9 +156,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	if _spr != null:
 		_spr.frame = int(_anim * WALK_FPS) % _spr.hframes
-		# The art is drawn facing north, so a heading of -Y needs no rotation.
+		# The art is drawn facing south: heads, snouts and outstretched hands all
+		# point towards +Y, so a heading of +Y needs no rotation.
 		if velocity.length_squared() > 1.0:
-			_spr_facing = velocity.angle() + PI * 0.5
+			_spr_facing = velocity.angle() - PI * 0.5
 		_spr.rotation = _spr_facing - rotation
 		var f := clampf(_flash / 0.12, 0.0, 1.0)
 		_spr.modulate = Color(1.0, 1.0, 1.0).lerp(Color(2.4, 2.0, 2.0), f)
