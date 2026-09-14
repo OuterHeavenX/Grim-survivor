@@ -43,6 +43,18 @@ var _dash_phase := 0
 var _wisp_dir := Vector2.ZERO
 var _summon_t := 9.0
 
+# Walk-cycle sheets built by tools/build_sprites.gd from assets/packs/. Frame
+# counts must match what that tool reports; an entry missing here (or a sheet
+# that fails to load) just falls back to the procedural _draw_* body below.
+const WALK_SHEETS := {
+	"skeleton": 9, "husk": 9, "wisp": 9, "bogling": 9, "mire": 9,
+	"imp": 9, "titan": 9, "herald": 8, "maw": 8, "cinderking": 8,
+}
+const WALK_FPS := 10.0
+
+var _spr: Sprite2D = null
+var _spr_facing := 0.0
+
 
 
 func is_boss() -> bool:
@@ -63,10 +75,26 @@ func setup(p_type: String, pos: Vector2, hp_m: float, dmg_m: float) -> void:
 	speed = float(d["speed"])
 	xp_value = int(d["xp"])
 	body_radius = float(d["radius"])
+	_make_sprite()
 	position = pos
 	_dash_t = randf_range(0.5, 1.5)
 	_tick = randf_range(0.0, 0.4)
 
+
+
+func _make_sprite() -> void:
+	if not WALK_SHEETS.has(etype):
+		return
+	var tex: Texture2D = load("res://assets/sprites/%s_walk.png" % etype)
+	if tex == null:
+		return
+	_spr = Sprite2D.new()
+	_spr.texture = tex
+	_spr.hframes = int(WALK_SHEETS[etype])
+	# Draw under the node's own _draw(), so the shadow, elite aura and hit
+	# flash still land on top of the body.
+	_spr.show_behind_parent = true
+	add_child(_spr)
 
 
 func make_elite() -> void:
@@ -126,6 +154,15 @@ func _physics_process(delta: float) -> void:
 	velocity = dir * spd + _kb
 	_kb = _kb.move_toward(Vector2.ZERO, 900.0 * delta)
 	move_and_slide()
+	if _spr != null:
+		_spr.frame = int(_anim * WALK_FPS) % _spr.hframes
+		# The art is drawn facing south: heads, snouts and outstretched hands all
+		# point towards +Y, so a heading of +Y needs no rotation.
+		if velocity.length_squared() > 1.0:
+			_spr_facing = velocity.angle() - PI * 0.5
+		_spr.rotation = _spr_facing - rotation
+		var f := clampf(_flash / 0.12, 0.0, 1.0)
+		_spr.modulate = Color(1.0, 1.0, 1.0).lerp(Color(2.4, 2.0, 2.0), f)
 	_tick -= delta
 	if _tick <= 0.0 and dist < body_radius + 22.0 and bool(player.get("alive")):
 		player.take_damage(dmg)
@@ -195,6 +232,19 @@ func _roll_shard_drop() -> void:
 
 
 func _draw() -> void:
+	if _spr != null:
+		# Body comes from the sprite child; just ground it with a shadow that
+		# sits below the feet rather than across them.
+		var h := _spr.texture.get_height() * 0.5
+		draw_set_transform(Vector2(0, h * 0.86), 0.0, Vector2(1.0, 0.38))
+		draw_circle(Vector2.ZERO, body_radius * 0.85, Color(0, 0, 0, 0.35))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		if is_elite:
+			_draw_elite_aura()
+		if _flash > 0.0:
+			draw_circle(Vector2.ZERO, body_radius + 2.0, Color(1, 1, 1, 0.35))
+		return
+
 	match etype:
 		"skeleton":
 			_draw_skeleton()

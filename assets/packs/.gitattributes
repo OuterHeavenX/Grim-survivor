@@ -1,0 +1,10 @@
+# Vendored third-party art packs. Keep them byte-exact as the vendor shipped
+# them: no line-ending conversion (the .scml and readme files are CRLF), and
+# no diffing. Also keep them out of GitHub's language statistics.
+* -text
+* -diff
+* linguist-vendored=true
+
+# ...except this directory's own documentation.
+README.md       text eol=lf -linguist-vendored
+.gitattributes  text eol=lf -linguist-vendored

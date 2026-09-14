@@ -33,7 +33,7 @@ func _ready() -> void:
 
 	var title := _label("GRIM SURVIVORS", 76, Color(0.85, 0.88, 0.96))
 	vb.add_child(title)
-	vb.add_child(_label("Survive five minutes. Slay the Herald.", 26, Color(0.55, 0.6, 0.72)))
+	vb.add_child(_label("Three stages. Fell the Cinder King.", 26, Color(0.55, 0.6, 0.72)))
 
 	var start := Button.new()
 	start.text = "START"

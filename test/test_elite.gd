@@ -10,6 +10,12 @@ var _player = null
 var _elite = null
 
 
+func _kill_boss() -> void:
+	var b = _main.boss
+	b.set("hp", 1.0)
+	b.take_damage(99999.0, b.global_position + Vector2(10, 0), 0.0)
+
+
 func _check(cond: bool, name: String) -> void:
 	if cond:
 		print("PASS: ", name)
@@ -189,9 +195,23 @@ func _process(_delta: float) -> void:
 		13:
 			if _wait > 15:
 				_check(bool(_gm.boss_spawned), "regression: boss spawns at 5:00")
-				var b = _main.boss
-				b.set("hp", 1.0)
-				b.take_damage(99999.0, b.global_position + Vector2(10, 0), 0.0)
+				_check(_gm.stage == 0, "boss 1 is the first stage's boss")
+				_kill_boss()
+				_phase = 131
+				_wait = 0
+		131:
+			# Only the final stage's boss wins the run; the earlier two advance.
+			if _wait > 15:
+				_check(_gm.stage == 1 and _gm.state == _gm.State.RUNNING,
+					"regression: stage 1 boss advances rather than winning")
+				_gm.stage = _gm.STAGES.size() - 1
+				_gm.run_time = 299.95
+				_phase = 132
+				_wait = 0
+		132:
+			if _wait > 15:
+				_check(bool(_gm.boss_spawned), "final boss spawns at 5:00")
+				_kill_boss()
 				_phase = 14
 				_wait = 0
 		14:

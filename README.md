@@ -20,6 +20,10 @@ scenes/main.tscn       Main scene — a single Node2D running src/main.gd
 src/                   Game code (25 scripts)
 test/                  Standalone test scenes (8 scripts)
 assets/audio/          Sound effects and music (21 WAVs)
+assets/packs/          Third-party CraftPix art packs. Carries a .gdignore, so
+                       Godot skips it and none of it ships in the build —
+                       copy a sprite out into assets/ to use it. See
+                       assets/packs/README.md
 
 build/web/             Exported web build — committed so the game can be served
                        straight from the repo. Regenerate it, don't hand-edit.
