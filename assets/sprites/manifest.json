@@ -1,0 +1,52 @@
+{
+	"bogling": {
+		"frame_h": 42,
+		"frame_w": 36,
+		"frames": 9
+	},
+	"cinderking": {
+		"frame_h": 180,
+		"frame_w": 200,
+		"frames": 8
+	},
+	"herald": {
+		"frame_h": 141,
+		"frame_w": 139,
+		"frames": 8
+	},
+	"husk": {
+		"frame_h": 78,
+		"frame_w": 77,
+		"frames": 9
+	},
+	"imp": {
+		"frame_h": 38,
+		"frame_w": 34,
+		"frames": 9
+	},
+	"maw": {
+		"frame_h": 160,
+		"frame_w": 158,
+		"frames": 8
+	},
+	"mire": {
+		"frame_h": 90,
+		"frame_w": 79,
+		"frames": 9
+	},
+	"skeleton": {
+		"frame_h": 52,
+		"frame_w": 53,
+		"frames": 9
+	},
+	"titan": {
+		"frame_h": 110,
+		"frame_w": 114,
+		"frames": 9
+	},
+	"wisp": {
+		"frame_h": 42,
+		"frame_w": 36,
+		"frames": 9
+	}
+}
