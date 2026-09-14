@@ -16,3 +16,8 @@
 *.wav         binary
 *.png         binary
 build/web/**  linguist-generated=true
+
+# Asset packs live in Git LFS. Keep this below the `* text=auto` rule above:
+# attributes are last-match-wins, so listing it first would let the catch-all
+# re-enable text conversion on the archives and corrupt them.
+*.zip filter=lfs diff=lfs merge=lfs -text
