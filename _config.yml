@@ -1,0 +1,16 @@
+# Only consulted when GitHub Pages is set to "Deploy from a branch", which runs
+# the repository root through Jekyll. The workflow in .github/workflows/pages.yml
+# uploads build/web/ directly and never reads this file.
+#
+# Branch mode publishes the whole repository, which would put the licensed
+# CraftPix art and the project sources on a public website. Only the exported
+# game needs to be reachable.
+exclude:
+  - assets/packs
+  - src
+  - test
+  - tools
+  - scenes
+  - export_presets.cfg
+  - project.godot
+  - README.md
