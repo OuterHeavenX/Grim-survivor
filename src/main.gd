@@ -591,20 +591,70 @@ func _on_enemy_died(e) -> void:
 			_advance_stage()
 
 
+# Cell must be at least the largest possible sum of two body radii (the Cinder
+# King is 56, so 112) for a 3x3 neighbour sweep to catch every overlapping pair.
+const SEP_CELL := 128.0
+const SEP_NEIGHBOURS: Array[Vector2i] = [
+	Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1),
+]
+
+
 func _separation() -> void:
 	var list := get_tree().get_nodes_in_group("enemies")
 	var n := list.size()
+	if n < 2:
+		return
+
+	# Read each enemy once. `position` and `body_radius` on an untyped node are
+	# dynamic lookups, and the old pairwise sweep did four of them per pair --
+	# at the 70-enemy cap that was 2415 pairs every physics frame.
+	var pos := PackedVector2Array()
+	var rad := PackedFloat32Array()
+	pos.resize(n)
+	rad.resize(n)
+	var cells := {}
 	for i in n:
-		var a = list[i]
-		for j in range(i + 1, n):
-			var b = list[j]
-			var d: Vector2 = b.position - a.position
-			var dist := d.length()
-			var min_d: float = a.get("body_radius") + b.get("body_radius")
-			if dist > 0.01 and dist < min_d:
-				var push := d.normalized() * (min_d - dist) * 0.25
-				a.position -= push
-				b.position += push
+		var e = list[i]
+		var p: Vector2 = e.position
+		pos[i] = p
+		rad[i] = e.body_radius
+		var key := Vector2i(floori(p.x / SEP_CELL), floori(p.y / SEP_CELL))
+		if cells.has(key):
+			cells[key].append(i)
+		else:
+			cells[key] = [i]
+
+	# Resolve against the cached positions in place, so pushes still compound
+	# within a frame the way the pairwise version's did.
+	for key in cells:
+		var here: Array = cells[key]
+		var c := here.size()
+		for ii in c:
+			var i: int = here[ii]
+			for jj in range(ii + 1, c):
+				_push_apart(pos, rad, i, here[jj])
+		# Only half the neighbourhood: the other half sees this cell from its
+		# own side, so every pair is still visited exactly once.
+		for off in SEP_NEIGHBOURS:
+			var other = cells.get(key + off)
+			if other == null:
+				continue
+			for i2 in here:
+				for j2 in other:
+					_push_apart(pos, rad, i2, j2)
+
+	for i in n:
+		list[i].position = pos[i]
+
+
+func _push_apart(pos: PackedVector2Array, rad: PackedFloat32Array, i: int, j: int) -> void:
+	var d: Vector2 = pos[j] - pos[i]
+	var dist := d.length()
+	var min_d: float = rad[i] + rad[j]
+	if dist > 0.01 and dist < min_d:
+		var push := d / dist * (min_d - dist) * 0.25
+		pos[i] -= push
+		pos[j] += push
 
 
 func spawn_gem(pos: Vector2, value: int) -> void:
