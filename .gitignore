@@ -1,0 +1,13 @@
+# Godot 4+ import cache and editor state — regenerated on first open.
+.godot/
+
+# Mono/C# (unused here, kept so a future switch doesn't leak build output)
+.mono/
+data_*/
+mono_crash.*.json
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*~
+*.swp
