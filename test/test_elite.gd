@@ -57,12 +57,93 @@ func _process(_delta: float) -> void:
 				var hp0: float = _elite.max_hp
 				var dmg0: float = _elite.dmg
 				var spd0: float = _elite.speed
-				_elite.make_elite()
+				# Elites roll an affix now, and several of them trade health for
+				# their gimmick, so this pins the affix rather than assuming the
+				# old flat x8. Left unforced it would pass only when the roll
+				# happened to come up vampiric.
+				_elite.make_elite("vampiric")
 				_check(_elite.get("is_elite"), "elite flagged")
-				_check(absf(_elite.max_hp - hp0 * 8.0) < 0.01, "elite hp x8")
+				_check(str(_elite.get("affix")) == "vampiric", "elite affix forced")
+				_check(absf(_elite.max_hp - hp0 * 8.0) < 0.01, "vampiric elite hp x8")
 				_check(absf(_elite.dmg - dmg0 * 1.5) < 0.01, "elite dmg x1.5")
 				_check(absf(_elite.speed - spd0 * 1.15) < 0.01, "elite speed x1.15")
 				_check(absf(_elite.scale.x - 1.35) < 0.01, "elite scale 1.35")
+
+				# Every affix must be reachable and must actually differ from
+				# the others, or "five affixes" is just one affix with labels.
+				# These probes free() immediately rather than queue_free(): a
+				# deferred free would leave them in the enemies group for the
+				# rest of the frame and contaminate the counts below.
+				var seen_hp := {}
+				for a in _elite.AFFIXES:
+					var probe = _main._spawn_enemy("skeleton", Vector2(900, 900))
+					var base_hp: float = probe.max_hp
+					var base_spd: float = probe.speed
+					probe.make_elite(a)
+					_check(str(probe.get("affix")) == a, "affix %s applies" % a)
+					_check(probe.max_hp > base_hp, "affix %s raises hp" % a)
+					seen_hp[snappedf(probe.max_hp / base_hp, 0.01)] = true
+					if a == "swift":
+						_check(probe.speed > base_spd * 1.7, "swift elite is fast")
+					probe.free()
+				_check(seen_hp.size() >= 3, "affixes differ in bulk, got %d tiers" % seen_hp.size())
+
+				# A swift elite must not also get the generic speed bump on top
+				# of its own, or it outruns the player outright.
+				var sw = _main._spawn_enemy("skeleton", Vector2(950, 950))
+				var sw_base: float = sw.speed
+				sw.make_elite("swift")
+				_check(absf(sw.speed - sw_base * 1.75) < 0.01, "swift speed not double-applied")
+				sw.free()
+
+				# The ward absorbs a hit whole rather than chipping down.
+				var wd = _main._spawn_enemy("skeleton", Vector2(980, 980))
+				wd.make_elite("warded")
+				wd.set("_shielded", true)
+				var wd_hp: float = wd.hp
+				wd.take_damage(50.0, wd.global_position + Vector2(10, 0), 0.0)
+				_check(absf(wd.hp - wd_hp) < 0.01, "ward absorbs a full hit")
+				_check(not bool(wd.get("_shielded")), "ward drops after absorbing")
+				wd.take_damage(50.0, wd.global_position + Vector2(10, 0), 0.0)
+				_check(wd.hp < wd_hp, "damage lands once the ward is down")
+				wd.free()
+
+				# A splitting elite leaves two weaker copies. Identify them by
+				# diffing against the enemies already present -- the parent is
+				# queue_free()d, so it is still in the group and cannot simply
+				# be counted out.
+				var before := {}
+				for e in get_tree().get_nodes_in_group("enemies"):
+					before[e.get_instance_id()] = true
+				var chests_before := _chests().size()
+				var sp = _main._spawn_enemy("skeleton", Vector2(-900, -900))
+				before[sp.get_instance_id()] = true
+				sp.make_elite("splitting")
+				var sp_hp: float = sp.max_hp
+				sp.set("hp", 1.0)
+				sp.take_damage(9999.0, sp.global_position + Vector2(10, 0), 0.0)
+				var kids := []
+				for e in get_tree().get_nodes_in_group("enemies"):
+					if not before.has(e.get_instance_id()):
+						kids.append(e)
+				_check(kids.size() == 2, "splitting elite leaves 2, got %d" % kids.size())
+				var kids_plain := true
+				var kids_weak := true
+				for k in kids:
+					if bool(k.get("is_elite")):
+						kids_plain = false
+					if k.max_hp >= sp_hp * 0.5:
+						kids_weak = false
+				_check(kids_plain, "split offspring are not themselves elite")
+				_check(kids_weak, "split offspring are weaker than the parent")
+				# Clear up after this side-quest so the chest and raven phases
+				# below still see the arena they expect.
+				for k in kids:
+					k.free()
+				for c in _chests():
+					if chests_before == 0:
+						c.free()
+
 				_phase = 1
 				_wait = 0
 		1:

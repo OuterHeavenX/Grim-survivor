@@ -162,14 +162,75 @@ func _process(_delta: float) -> void:
 				_main._spawn_boss()
 				_check(_main.boss != null and str(_main.boss.get("etype")) == "maw", "maw spawned")
 				_check(_gm.boss_alive, "boss_alive set")
-				_main.boss.take_damage(99999999.0, _player.global_position, 0.0)
+				# Hold the maw alive: the next phases drive its attack pattern.
 				_phase = 4
 				_wait = 0
 		4:
 			if _wait > 3:
+				# Bosses used to just walk at the player and summon skeletons.
+				# Each one now telegraphs a signature move, so check the maw
+				# paints its charge lane before committing to it.
+				var b = _main.boss
+				b.set("_cast_phase", 0)
+				b.set("_cast_t", 0.0)
+				_phase = 5
+				_wait = 0
+		5:
+			if _wait > 4:
+				var b = _main.boss
+				var lanes := 0
+				for h in get_tree().get_nodes_in_group("hazards"):
+					if str(h.get("mode")) == "lane":
+						lanes += 1
+				_check(lanes >= 1, "maw telegraphs its charge lane, got %d" % lanes)
+				_check(int(b.get("_cast_phase")) == 1, "maw is in wind-up")
+
+				# Commit: the lunge rides _kb, which must survive the frame it
+				# starts on rather than being damped away like a knockback.
+				b.set("_cast_t", 0.0)
+				b.set("_kb", Vector2.ZERO)
+				b._commit()
+				_check(b.get("_kb").length() > 500.0, "maw charge carries real speed")
+
+				# The herald fires a ring, not a single shot.
+				var herald = _main._spawn_enemy("herald", Vector2(700, 0))
+				herald._commit()
+				var bolts := 0
+				for h in get_tree().get_nodes_in_group("hazards"):
+					if str(h.get("mode")) == "bolt":
+						bolts += 1
+				_check(bolts >= 9, "herald volley fires a ring, got %d" % bolts)
+
+				# An eruption must warn before it bites, or it is a coin flip.
+				var erupt = _main.spawn_hazard("eruption", _player.global_position, 25.0, Color.RED)
+				erupt.telegraph = 0.75
+				var hp_before: float = _player.hp
+				erupt._step_eruption()
+				_check(absf(_player.hp - hp_before) < 0.01, "eruption is harmless while warning")
+				erupt.set("_age", 1.0)
+				erupt._step_eruption()
+				_check(_player.hp < hp_before, "eruption hurts once the warning ends")
+
+				# Hazards are capped like pickups: unbounded spawning is what
+				# caused the long-run crash in the first place.
+				for i in _main.MAX_HAZARDS + 30:
+					_main.spawn_hazard("bolt", Vector2(i, 0), 1.0, Color.RED)
+				var live := get_tree().get_nodes_in_group("hazards").size()
+				_check(live <= _main.MAX_HAZARDS + 1,
+					"hazards capped at %d, got %d" % [_main.MAX_HAZARDS, live])
+
+				herald.queue_free()
+				_player.set("hp", _player.get("max_hp"))
+				_main.boss.take_damage(99999999.0, _player.global_position, 0.0)
+				_phase = 6
+				_wait = 0
+		6:
+			if _wait > 3:
 				_check(_aged_gem == null or not is_instance_valid(_aged_gem),
 					"a gem past its lifetime frees itself")
 				_check(_gm.stage == 2, "advanced to stage 3, got %d" % _gm.stage)
+				_check(get_tree().get_nodes_in_group("hazards").size() == 0,
+					"stage change clears leftover hazards")
 				_check(_gm.run_time < 2.0, "stage timer reset")
 				_check(not _gm.boss_alive, "boss flag cleared")
 				_check(_player.hp >= _player.get("max_hp") - 1.0, "healed between stages")
@@ -180,9 +241,9 @@ func _process(_delta: float) -> void:
 				_main._spawn_boss()
 				_check(str(_main.boss.get("etype")) == "cinderking", "cinder king spawned")
 				_main.boss.take_damage(99999999.0, _player.global_position, 0.0)
-				_phase = 5
+				_phase = 7
 				_wait = 0
-		5:
+		7:
 			if _wait > 3:
 				_check(_gm.state == _gm.State.VICTORY, "final boss -> victory")
 				print("STAGES TEST DONE fails=", _fails)

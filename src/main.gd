@@ -19,11 +19,15 @@ const WeaponsScript := preload("res://src/weapons_ui.gd")
 const BgScript := preload("res://src/bg.gd")
 const GroundScript := preload("res://src/ground.gd")
 const FogScript := preload("res://src/fog.gd")
+const HazardScript := preload("res://src/hazard.gd")
 
 const MAX_ENEMIES := 70
 # A hard ceiling for drifted-away pickups, in case a kill storm outruns the
 # lifetime fade. Oldest go first.
 const MAX_PICKUPS := 140
+# Boss patterns and venom trails both spawn hazards, and an enraged boss in a
+# late stage spawns a lot of them. Same reasoning as the pickup cap.
+const MAX_HAZARDS := 90
 const ARENA := 1500.0
 const ELITE_TIMES := [60.0, 105.0, 150.0, 195.0, 240.0, 270.0]
 const MAX_LIVE_ELITES := 3
@@ -463,7 +467,7 @@ func _advance_stage() -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
 		jm.gold_burst(e.global_position)
 		e.queue_free()
-	for group in ["gems", "shards", "relics"]:
+	for group in ["gems", "shards", "relics", "hazards"]:
 		for n in get_tree().get_nodes_in_group(group):
 			n.queue_free()
 	if player:
@@ -551,7 +555,7 @@ func _spawn_elite() -> void:
 	var etype: String = str(epool[randi() % epool.size()])
 	var e = _spawn_enemy(etype, _ring_pos())
 	e.make_elite()
-	hud.show_warning("ELITE APPROACHES")
+	hud.show_warning("%s ELITE APPROACHES" % e.AFFIX_NAMES.get(e.affix, ""))
 	am.play("elite_horn", -4.0)
 	jm.add_trauma(0.25)
 	jm.gold_burst(e.global_position)
@@ -566,6 +570,32 @@ func _spawn_enemy(etype: String, pos: Vector2):
 	var dmg_m := (1.0 + t / 120.0 * 0.2) * (1.0 + float(gm.stage) * 0.2)
 	var e = EnemyScript.new()
 	e.setup(etype, pos, hp_m, dmg_m)
+	e.died.connect(_on_enemy_died.bind(e))
+	run.add_child(e)
+	return e
+
+
+func spawn_hazard(mode: String, pos: Vector2, dmg: float, col: Color) -> Node2D:
+	_cap_group("hazards", MAX_HAZARDS)
+	var h = HazardScript.new()
+	h.setup(mode, pos, dmg, col)
+	run.add_child(h)
+	return h
+
+
+func spawn_split(etype: String, pos: Vector2, hp_val: float, dmg_val: float):
+	# A splitting elite's offspring: fixed stats taken from the parent rather
+	# than the run's scaling curve, so a late-stage split does not come back
+	# stronger than the elite that died to make it.
+	if _enemy_count() >= MAX_ENEMIES:
+		return null
+	var p := Vector2(clampf(pos.x, -ARENA, ARENA), clampf(pos.y, -ARENA, ARENA))
+	var e = EnemyScript.new()
+	e.setup(etype, p, 1.0, 1.0)
+	e.max_hp = maxf(1.0, hp_val)
+	e.hp = e.max_hp
+	e.dmg = dmg_val * 0.6
+	e.scale = Vector2(0.85, 0.85)
 	e.died.connect(_on_enemy_died.bind(e))
 	run.add_child(e)
 	return e
