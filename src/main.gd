@@ -406,6 +406,16 @@ func _apply_stage_theme() -> void:
 			fog_tint = Color(0.35, 0.55, 0.4)
 		"cinder":
 			fog_tint = Color(0.6, 0.35, 0.25)
+		"desert":
+			fog_tint = Color(0.7, 0.6, 0.38)
+		"barrens":
+			fog_tint = Color(0.55, 0.45, 0.32)
+		"grove":
+			fog_tint = Color(0.35, 0.6, 0.35)
+		"drowned":
+			fog_tint = Color(0.3, 0.45, 0.7)
+		"bastion":
+			fog_tint = Color(0.6, 0.5, 0.4)
 	if fog_a:
 		fog_a.set("fog_color", Color(fog_tint, 0.05))
 	if fog_b:
@@ -415,7 +425,9 @@ func _apply_stage_theme() -> void:
 
 
 func _advance_stage() -> void:
-	gm.stage += 1
+	# Stages can be entered at any point, so walk forward through the list and
+	# wrap rather than running off the end.
+	gm.stage = (gm.stage + 1) % gm.STAGES.size()
 	gm.run_time = 0.0
 	gm.boss_spawned = false
 	gm.boss_alive = false
@@ -519,8 +531,11 @@ func _spawn_elite() -> void:
 
 func _spawn_enemy(etype: String, pos: Vector2):
 	var t: float = gm.run_time
-	var hp_m := (1.0 + t / 60.0 * 0.35) * (1.0 + float(gm.stage) * 0.8)
-	var dmg_m := (1.0 + t / 120.0 * 0.2) * (1.0 + float(gm.stage) * 0.35)
+	# Per-stage scaling was tuned for three stages; across eight the old 0.8 per
+	# stage reached 6.6x health by the last, which is unplayable as an opening
+	# stage now that any of them can be picked from the title screen.
+	var hp_m := (1.0 + t / 60.0 * 0.35) * (1.0 + float(gm.stage) * 0.45)
+	var dmg_m := (1.0 + t / 120.0 * 0.2) * (1.0 + float(gm.stage) * 0.2)
 	var e = EnemyScript.new()
 	e.setup(etype, pos, hp_m, dmg_m)
 	e.died.connect(_on_enemy_died.bind(e))
@@ -585,7 +600,8 @@ func _on_enemy_died(e) -> void:
 		for i in drops:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(20.0, 70.0)
 			spawn_shard(e.global_position + off, 5)
-		if gm.stage >= gm.STAGES.size() - 1:
+		gm.stages_cleared += 1
+		if gm.stages_cleared >= gm.stages_in_run():
 			gm.end_run(true)
 		else:
 			_advance_stage()

@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Grim Survivors"
-config/description="A grimdark vampire-survivors-lite. Three stages, three bosses, five minutes each. Fell the Cinder King."
+config/description="A grimdark vampire-survivors-lite. Eight stages, five minutes each. Pick your ground and a run of 5 to 30 minutes."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"

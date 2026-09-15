@@ -24,6 +24,9 @@ func _ready() -> void:
 	await get_tree().process_frame
 	_main = get_tree().get_first_node_in_group("main")
 	_gm = get_node("/root/GameManager")
+	# A run is now as many stages as the chosen length allows, so ask for a long
+	# one: these phases walk through several stages before expecting a victory.
+	_gm.selected_minutes = 30
 	_check(_main != null, "main found")
 	_main.start_run()
 	set_process(true)
@@ -41,7 +44,7 @@ func _process(_delta: float) -> void:
 					_check(_gm.EVOLUTIONS.has(id), "evolution for " + id)
 					var req: String = str(_gm.EVOLUTIONS[id]["passive"])
 					_check(_gm.PASSIVES.has(req), "evo passive valid: " + req)
-				_check(_gm.STAGES.size() == 3, "3 stages defined")
+				_check(_gm.STAGES.size() == 8, "8 stages defined")
 				for sd in _gm.STAGES:
 					var pool: Array = sd["pool"]
 					_check(pool.size() == 3, "stage pool x3: " + str(sd["name"]))
@@ -129,6 +132,9 @@ func _process(_delta: float) -> void:
 				_check(not _gm.boss_alive, "boss flag cleared")
 				_check(_player.hp >= _player.get("max_hp") - 1.0, "healed between stages")
 
+				# Victory now comes from clearing the chosen number of stages
+				# rather than reaching the end of the list.
+				_gm.stages_cleared = _gm.stages_in_run() - 1
 				_main._spawn_boss()
 				_check(str(_main.boss.get("etype")) == "cinderking", "cinder king spawned")
 				_main.boss.take_damage(99999999.0, _player.global_position, 0.0)

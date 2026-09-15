@@ -33,6 +33,34 @@ const DECOR := {
 			[OBJ + "object_0010_car3.png", 150], [OBJ + "object_0008_house.png", 270],
 			[OBJ + "object_0009_garage.png", 240], [OBJ + "object_0014_column1.png", 124]],
 	},
+	"desert": {
+		"s": [[P3 + "details/sand/64", 0], [P3 + "details/sand/128", 0]],
+		"p": [[OBJ + "object_0014_column1.png", 124], [OBJ + "object_0013_column2.png", 124],
+			[OBJ + "object_0003_tree5.png", 150]],
+	},
+	"barrens": {
+		"s": [[P3 + "details/ground/64", 0], [P3 + "details/ground/128", 0]],
+		"p": [[OBJ + "object_0013_column2.png", 124], [OBJ + "object_0010_car3.png", 150],
+			[OBJ + "object_0004_tree4.png", 160]],
+	},
+	"grove": {
+		"s": [[P3 + "details/grass/64", 0], [P3 + "details/grass/32", 0],
+			[P3 + "details/ground/64", 0]],
+		"p": [[OBJ + "object_0007_tree.png", 200], [OBJ + "object_0006_tree2.png", 200],
+			[OBJ + "object_0005_tree3.png", 180]],
+	},
+	"drowned": {
+		"s": [[P3 + "details/pebbles_water/64", 0], [P3 + "details/pebbles_water/128", 0]],
+		"p": [[OBJ + "object_0005_tree3.png", 170], [OBJ + "object_0014_column1.png", 124],
+			[OBJ + "object_0008_house.png", 250]],
+	},
+	"bastion": {
+		"s": [[P3 + "details/ground/64", 0], [P3 + "details/ground/128", 0],
+			[P3 + "details/ground/256", 0]],
+		"p": [[OBJ + "object_0008_house.png", 270], [OBJ + "object_0009_garage.png", 240],
+			[OBJ + "object_0012_car1.png", 150], [OBJ + "object_0011_car2.png", 150],
+			[OBJ + "object_0014_column1.png", 124]],
+	},
 }
 
 

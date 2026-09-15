@@ -187,6 +187,31 @@ const STAGES := [
 		"boss_aura": Color(1.0, 0.45, 0.15), "theme": "cinder",
 		"pool": ["imp", "titan", "bogling"],
 	},
+	{
+		"name": "THE BONE DESERT", "boss": "herald", "boss_name": "THE PALE HERALD",
+		"boss_aura": Color(1.0, 0.85, 0.5), "theme": "desert",
+		"pool": ["skeleton", "imp", "titan"],
+	},
+	{
+		"name": "ROTGROVE", "boss": "maw", "boss_name": "THE ROTGROVE MAW",
+		"boss_aura": Color(0.5, 1.0, 0.35), "theme": "grove",
+		"pool": ["bogling", "mire", "husk"],
+	},
+	{
+		"name": "THE SUNKEN ROAD", "boss": "cinderking", "boss_name": "WARDEN OF THE ROAD",
+		"boss_aura": Color(0.9, 0.5, 0.25), "theme": "barrens",
+		"pool": ["husk", "titan", "wisp"],
+	},
+	{
+		"name": "THE DROWNED REACH", "boss": "maw", "boss_name": "THE DROWNED MAW",
+		"boss_aura": Color(0.4, 0.75, 1.0), "theme": "drowned",
+		"pool": ["mire", "wisp", "bogling"],
+	},
+	{
+		"name": "THE LAST BASTION", "boss": "cinderking", "boss_name": "THE ASHEN SOVEREIGN",
+		"boss_aura": Color(1.0, 0.35, 0.12), "theme": "bastion",
+		"pool": ["titan", "imp", "husk"],
+	},
 ]
 
 const SAVE_PATH := "user://grim_survivors.cfg"
@@ -231,6 +256,12 @@ var evolved := {}
 var stage := 0
 # Stage picked on the title screen; a run starts there instead of the first.
 var selected_stage := 0
+# Total run length in minutes, chosen on the title screen. RUN_DURATION is one
+# stage, so this is really "how many stages before victory".
+const RUN_LENGTHS := [5, 10, 15, 20, 30]
+var selected_minutes := 5
+# Stages finished in the current run; victory once it reaches stages_in_run().
+var stages_cleared := 0
 var boss_spawned := false
 var boss_alive := false
 
@@ -407,7 +438,12 @@ func xp_needed() -> int:
 	return 5 + (level - 1) * 6
 
 
+func stages_in_run() -> int:
+	return maxi(1, int(round(float(selected_minutes) * 60.0 / RUN_DURATION)))
+
+
 func reset_run() -> void:
+	stages_cleared = 0
 	run_time = 0.0
 	kills = 0
 	level = 1
@@ -518,7 +554,10 @@ func apply_upgrade(choice: Dictionary) -> void:
 
 func end_run(victory: bool) -> void:
 	state = State.VICTORY if victory else State.GAMEOVER
-	var survived := RUN_DURATION if victory else run_time
+	# run_time restarts each stage, so a run's length is the stages already
+	# finished plus however far into the current one it ended.
+	var survived := float(selected_minutes) * 60.0 if victory \
+		else RUN_DURATION * float(stages_cleared) + run_time
 	best["time"] = maxf(float(best["time"]), survived)
 	best["kills"] = maxi(int(best["kills"]), kills)
 	best["level"] = maxi(int(best["level"]), level)

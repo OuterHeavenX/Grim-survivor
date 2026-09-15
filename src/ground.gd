@@ -31,13 +31,56 @@ const THEMES := {
 		"tex": "res://assets/ground/cinder.png", "tex_tint": Color(1.45, 0.90, 0.72),
 		"border": Color(0.28, 0.14, 0.1), "stone": Color(0.3, 0.18, 0.14),
 	},
+	"desert": {
+		"base": Color(0.075, 0.062, 0.042),
+		"tile_hi": Color(0.16, 0.13, 0.09), "tile_lo": Color(0.05, 0.042, 0.03),
+		"scorch": Color(0.022, 0.016, 0.008), "ash": Color(0.42, 0.38, 0.3),
+		"crack_glow": Color(1.0, 0.68, 0.22), "rune": Color(0.95, 0.8, 0.45),
+		"tex": "res://assets/ground/desert.png", "tex_tint": Color(0.26, 0.23, 0.27),
+		"border": Color(0.3, 0.25, 0.16), "stone": Color(0.34, 0.29, 0.2),
+	},
+	"barrens": {
+		"base": Color(0.058, 0.046, 0.034),
+		"tile_hi": Color(0.13, 0.1, 0.075), "tile_lo": Color(0.04, 0.032, 0.024),
+		"scorch": Color(0.018, 0.012, 0.008), "ash": Color(0.36, 0.31, 0.25),
+		"crack_glow": Color(0.85, 0.45, 0.18), "rune": Color(0.7, 0.6, 0.4),
+		"tex": "res://assets/ground/barrens.png", "tex_tint": Color(0.29, 0.27, 0.32),
+		"border": Color(0.24, 0.19, 0.13), "stone": Color(0.27, 0.22, 0.16),
+	},
+	"grove": {
+		"base": Color(0.032, 0.058, 0.036),
+		"tile_hi": Color(0.08, 0.14, 0.08), "tile_lo": Color(0.022, 0.044, 0.026),
+		"scorch": Color(0.01, 0.02, 0.012), "ash": Color(0.3, 0.4, 0.26),
+		"crack_glow": Color(0.5, 1.0, 0.45), "rune": Color(0.55, 0.95, 0.6),
+		"tex": "res://assets/ground/grove.png", "tex_tint": Color(0.64, 0.91, 1.80),
+		"border": Color(0.14, 0.26, 0.16), "stone": Color(0.18, 0.3, 0.2),
+	},
+	"drowned": {
+		"base": Color(0.028, 0.042, 0.072),
+		"tile_hi": Color(0.07, 0.1, 0.17), "tile_lo": Color(0.02, 0.03, 0.055),
+		"scorch": Color(0.008, 0.012, 0.022), "ash": Color(0.28, 0.36, 0.46),
+		"crack_glow": Color(0.35, 0.7, 1.0), "rune": Color(0.45, 0.8, 1.0),
+		"tex": "res://assets/ground/drowned.png", "tex_tint": Color(0.40, 0.44, 0.58),
+		"border": Color(0.14, 0.2, 0.32), "stone": Color(0.18, 0.24, 0.36),
+	},
+	"bastion": {
+		"base": Color(0.055, 0.05, 0.045),
+		"tile_hi": Color(0.13, 0.12, 0.1), "tile_lo": Color(0.038, 0.034, 0.03),
+		"scorch": Color(0.016, 0.014, 0.012), "ash": Color(0.4, 0.37, 0.33),
+		"crack_glow": Color(1.0, 0.55, 0.2), "rune": Color(0.9, 0.7, 0.45),
+		"tex": "res://assets/ground/bastion.png", "tex_tint": Color(0.38, 0.40, 0.56),
+		"border": Color(0.26, 0.23, 0.19), "stone": Color(0.3, 0.27, 0.23),
+	},
 }
 
 var theme: Dictionary = THEMES["ashen"]
 var _tex: Texture2D = null
 
 # Scatter art built by tools/build_decor.gd: [small ground details, large props].
-const DECOR_COUNTS := {"ashen": [10, 2], "marsh": [9, 3], "cinder": [10, 6]}
+const DECOR_COUNTS := {
+	"ashen": [10, 2], "marsh": [9, 3], "cinder": [10, 6], "desert": [12, 3],
+	"barrens": [9, 3], "grove": [10, 3], "drowned": [5, 3], "bastion": [10, 5],
+}
 const SCATTER_COUNT := 190
 const PROP_COUNT := 18
 # Props are big enough to sit under the player at spawn, so keep them clear of it.

@@ -10,6 +10,8 @@ var shard_label: Label
 var sound_btn: Button
 var stage_btns: Array[Button] = []
 var stage_label: Label
+var length_btns: Array[Button] = []
+var length_label: Label
 var am = null
 
 
@@ -35,7 +37,7 @@ func _ready() -> void:
 
 	var title := _label("GRIM SURVIVORS", 76, Color(0.85, 0.88, 0.96))
 	vb.add_child(title)
-	vb.add_child(_label("Three stages. Fell the Cinder King.", 26, Color(0.55, 0.6, 0.72)))
+	vb.add_child(_label("Eight stages. Choose your ground and your hour.", 26, Color(0.55, 0.6, 0.72)))
 
 	vb.add_child(_stage_picker())
 
@@ -98,24 +100,50 @@ func _stage_picker() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	# Eight stages will not fit on one phone-width row, so wrap them.
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
 	for i in gm.STAGES.size():
 		var b := Button.new()
 		b.text = _numeral(i)
-		b.custom_minimum_size = Vector2(132, 72)
-		b.add_theme_font_size_override("font_size", 30)
+		b.custom_minimum_size = Vector2(104, 56)
+		b.add_theme_font_size_override("font_size", 24)
 		b.pressed.connect(_on_stage.bind(i))
 		stage_btns.append(b)
-		row.add_child(b)
-	var rc := CenterContainer.new()
-	rc.add_child(row)
-	box.add_child(rc)
+		grid.add_child(b)
+	var gc := CenterContainer.new()
+	gc.add_child(grid)
+	box.add_child(gc)
 
-	stage_label = _label("", 24, Color(0.62, 0.66, 0.78))
+	stage_label = _label("", 22, Color(0.62, 0.66, 0.78))
 	box.add_child(stage_label)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	for m in gm.RUN_LENGTHS:
+		var b := Button.new()
+		b.text = "%d" % m
+		b.custom_minimum_size = Vector2(82, 54)
+		b.add_theme_font_size_override("font_size", 24)
+		b.pressed.connect(_on_length.bind(int(m)))
+		length_btns.append(b)
+		row.add_child(b)
+	var lc := CenterContainer.new()
+	lc.add_child(row)
+	box.add_child(lc)
+
+	length_label = _label("", 22, Color(0.62, 0.66, 0.78))
+	box.add_child(length_label)
 	return box
+
+
+func _on_length(m: int) -> void:
+	am.play("ui_click", -8.0)
+	gm.selected_minutes = m
+	_refresh_stages()
 
 
 func _on_stage(i: int) -> void:
@@ -125,7 +153,7 @@ func _on_stage(i: int) -> void:
 
 
 func _numeral(i: int) -> String:
-	const NUMERALS := ["I", "II", "III", "IV", "V"]
+	const NUMERALS := ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"]
 	return NUMERALS[i] if i < NUMERALS.size() else str(i + 1)
 
 
@@ -139,6 +167,17 @@ func _refresh_stages() -> void:
 	if stage_label != null:
 		var sd: Dictionary = gm.STAGES[clampi(int(gm.selected_stage), 0, gm.STAGES.size() - 1)]
 		stage_label.text = "%s  \u2014  %s" % [str(sd["name"]), str(sd["boss_name"])]
+
+	var lengths: Array = gm.RUN_LENGTHS
+	for i in length_btns.size():
+		var picked: bool = int(lengths[i]) == int(gm.selected_minutes)
+		var b: Button = length_btns[i]
+		b.text = "[%d]" % int(lengths[i]) if picked else "%d" % int(lengths[i])
+		b.add_theme_color_override("font_color",
+			Color(1.0, 0.82, 0.35) if picked else Color(0.5, 0.54, 0.64))
+	if length_label != null:
+		var n: int = gm.stages_in_run()
+		length_label.text = "%d min  \u2014  %d stage%s" % [int(gm.selected_minutes), n, "" if n == 1 else "s"]
 
 
 func _label(text: String, fs: int, col: Color) -> Label:

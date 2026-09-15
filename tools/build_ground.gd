@@ -20,6 +20,11 @@ const THEMES := {
 	"ashen": PACKS + "tileset-pack-3/PNG/tiles/stones",
 	"marsh": PACKS + "tileset-pack-3/PNG/tiles/water",
 	"cinder": PACKS + "tileset/Tiles&Details/PNG_version_2/Asphalt_tiles",
+	"desert": PACKS + "tileset-pack-3/PNG/tiles/sand",
+	"barrens": PACKS + "tileset-pack-3/PNG/tiles/ground",
+	"grove": PACKS + "tileset/Tiles&Details/PNG_version_2/Grass_tiles",
+	"drowned": PACKS + "tileset/Tiles&Details/PNG_version_2/Water_tiles",
+	"bastion": PACKS + "tileset/Tiles&Details/PNG_version_2/Ground_tiles",
 }
 # Other sets in the same pack, unused so far but available for new stages:
 # Grass_tiles (jungle/overgrown), Ground_tiles (dirt), Water_tiles.

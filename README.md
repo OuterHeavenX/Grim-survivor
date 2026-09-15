@@ -1,10 +1,15 @@
 # Grim Survivors
 
-A grimdark vampire-survivors-lite built in Godot 4.7. Survive five minutes,
-slay the Herald. Weapons fire on their own; you move, dodge and pick up gems.
+A grimdark vampire-survivors-lite built in Godot 4.7. Weapons fire on their own;
+you move, dodge and pick up gems.
+
+Eight stages, five minutes each, any of them selectable from the title screen.
+A run is 5, 10, 15, 20 or 30 minutes -- that many five-minute stages, each
+ending in a boss -- and finishing the last one is the victory.
 
 Four playable classes — Hooded Rogue, Shadowblade, Pyromancer, Iron Warden —
-and six meta upgrades bought with soul shards banked across runs. Targets both
+unlocked with soul shards, plus six meta upgrade tracks banked across runs.
+Enemies scale with the stage, so later ground is harder ground. Targets both
 desktop and mobile web (portrait, 720×1280, on-screen joystick when a
 touchscreen is present).
 
