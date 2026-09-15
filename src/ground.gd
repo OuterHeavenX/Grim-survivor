@@ -36,10 +36,23 @@ const THEMES := {
 var theme: Dictionary = THEMES["ashen"]
 var _tex: Texture2D = null
 
+# Scatter art built by tools/build_decor.gd: [small ground details, large props].
+const DECOR_COUNTS := {"ashen": [10, 2], "marsh": [9, 3], "cinder": [10, 6]}
+const SCATTER_COUNT := 190
+const PROP_COUNT := 18
+# Props are big enough to sit under the player at spawn, so keep them clear of it.
+const PROP_CLEAR := 320.0
+
+var _theme_key := "ashen"
+var _decor_s: Array[Texture2D] = []
+var _decor_p: Array[Texture2D] = []
+
 
 func set_theme(key: String) -> void:
 	theme = THEMES.get(key, THEMES["ashen"])
+	_theme_key = key if THEMES.has(key) else "ashen"
 	_tex = load(str(theme.get("tex", "")))
+	_load_decor()
 	_rng.seed = 4242 + abs(hash(key)) % 100000
 	queue_redraw()
 
@@ -47,11 +60,58 @@ var _rng := RandomNumberGenerator.new()
 var _noise := FastNoiseLite.new()
 
 
+func _load_decor() -> void:
+	_decor_s.clear()
+	_decor_p.clear()
+	var counts: Array = DECOR_COUNTS.get(_theme_key, [0, 0])
+	for i in int(counts[0]):
+		var t: Texture2D = load("res://assets/decor/%s_s%02d.png" % [_theme_key, i])
+		if t != null:
+			_decor_s.append(t)
+	for i in int(counts[1]):
+		var t: Texture2D = load("res://assets/decor/%s_p%02d.png" % [_theme_key, i])
+		if t != null:
+			_decor_p.append(t)
+
+
+func _place(tex: Texture2D, pos: Vector2, rot: float, flip: float, tint: Color) -> void:
+	draw_set_transform(pos, rot, Vector2(flip, 1.0))
+	draw_texture(tex, -tex.get_size() * 0.5, tint)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+func _draw_decor(e: float) -> void:
+	if _decor_s.is_empty() and _decor_p.is_empty():
+		return
+	var r := RandomNumberGenerator.new()
+	r.seed = 77 + abs(hash(_theme_key)) % 100000
+
+	# Small stuff can face any way; a rotated wreck or column reads fine
+	# top-down, but they get a flip rather than a spin so they stay grounded.
+	for i in SCATTER_COUNT:
+		if _decor_s.is_empty():
+			break
+		var t: Texture2D = _decor_s[r.randi_range(0, _decor_s.size() - 1)]
+		var p := Vector2(r.randf_range(-e, e), r.randf_range(-e, e))
+		_place(t, p, r.randf_range(0.0, TAU), 1.0, Color(0.66, 0.66, 0.7, 0.92))
+
+	for i in PROP_COUNT:
+		if _decor_p.is_empty():
+			break
+		var t: Texture2D = _decor_p[r.randi_range(0, _decor_p.size() - 1)]
+		var p := Vector2(r.randf_range(-e, e), r.randf_range(-e, e))
+		if p.length() < PROP_CLEAR:
+			p = p.normalized() * PROP_CLEAR if p.length() > 1.0 else Vector2(PROP_CLEAR, 0)
+		_place(t, p, 0.0, 1.0 if r.randf() < 0.5 else -1.0, Color(0.62, 0.62, 0.66, 1.0))
+
+
 func _ready() -> void:
 	# draw_texture_rect(..., tile = true) needs the repeat mode set on the node.
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	if _tex == null:
 		_tex = load(str(theme.get("tex", "")))
+	if _decor_s.is_empty() and _decor_p.is_empty():
+		_load_decor()
 	_rng.seed = 4242
 	_noise.seed = 9001
 	_noise.frequency = 0.012
@@ -145,6 +205,8 @@ func _draw() -> void:
 		for k in 3:
 			var tip := p + Vector2(_rng.randf_range(-7, 7), _rng.randf_range(-14, -6))
 			draw_line(p, tip, Color(0.1, 0.11, 0.09), 2.0)
+
+	_draw_decor(e)
 
 	draw_rect(Rect2(-ARENA, -ARENA, ARENA * 2.0, ARENA * 2.0), Color(theme["border"], 0.55), false, 6.0)
 	var steps := 48
