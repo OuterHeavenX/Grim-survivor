@@ -153,7 +153,20 @@ func _run_node():
 
 
 
-func death_fx(pos: Vector2, big: bool = false) -> void:
+# Death-pose sheets built by tools/build_sprites.gd, keyed by enemy type.
+# A type missing here just gets the particle burst, as before.
+const DEATH_SHEETS := {
+	"skeleton": 6, "husk": 6, "wisp": 6, "bogling": 6, "mire": 6,
+	"imp": 6, "titan": 6, "herald": 10, "maw": 10, "cinderking": 14,
+}
+const DEATH_FPS := 14.0
+const CORPSE_LINGER := 2.5
+const CORPSE_FADE := 1.0
+# Bodies are cosmetic, so drop new ones rather than let a big wave pile up.
+const MAX_CORPSES := 24
+
+
+func death_fx(pos: Vector2, big: bool = false, etype: String = "", facing: float = 0.0) -> void:
 	var run = _run_node()
 	if run == null:
 		return
@@ -181,6 +194,33 @@ func death_fx(pos: Vector2, big: bool = false) -> void:
 	w.position = pos + Vector2(0, -10)
 	w.z_index = 41
 	run.add_child(w)
+	_corpse(run, pos, etype, facing)
+
+
+func _corpse(run, pos: Vector2, etype: String, facing: float) -> void:
+	if not DEATH_SHEETS.has(etype):
+		return
+	if get_tree().get_nodes_in_group("corpses").size() >= MAX_CORPSES:
+		return
+	var tex: Texture2D = load("res://assets/sprites/%s_death.png" % etype)
+	if tex == null:
+		return
+	var frames: int = int(DEATH_SHEETS[etype])
+	var body := Sprite2D.new()
+	body.texture = tex
+	body.hframes = frames
+	body.position = pos
+	body.rotation = facing
+	# Below the living, above the ground.
+	body.z_index = -1
+	body.add_to_group("corpses")
+	run.add_child(body)
+
+	var t := body.create_tween()
+	t.tween_property(body, "frame", frames - 1, float(frames) / DEATH_FPS).from(0)
+	t.tween_interval(CORPSE_LINGER)
+	t.tween_property(body, "modulate:a", 0.0, CORPSE_FADE)
+	t.tween_callback(body.queue_free)
 
 
 

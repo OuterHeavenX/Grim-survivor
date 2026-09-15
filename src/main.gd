@@ -5,6 +5,7 @@ const PlayerScript := preload("res://src/player.gd")
 const EnemyScript := preload("res://src/enemy.gd")
 const GemScript := preload("res://src/gem.gd")
 const ShardScript := preload("res://src/shard.gd")
+const RelicScript := preload("res://src/relic.gd")
 const ChestScript := preload("res://src/chest.gd")
 const LootScript := preload("res://src/loot_ui.gd")
 const HudScript := preload("res://src/hud.gd")
@@ -14,6 +15,7 @@ const CharSelectScript := preload("res://src/char_select.gd")
 const EndScript := preload("res://src/end_screen.gd")
 const PauseScript := preload("res://src/pause_menu.gd")
 const UpgradesScript := preload("res://src/upgrades_ui.gd")
+const WeaponsScript := preload("res://src/weapons_ui.gd")
 const BgScript := preload("res://src/bg.gd")
 const GroundScript := preload("res://src/ground.gd")
 const FogScript := preload("res://src/fog.gd")
@@ -38,6 +40,7 @@ var char_select = null
 var end_screen = null
 var pause_menu = null
 var upgrades_ui = null
+var weapons_ui = null
 var fog_a: Node2D
 var fog_b: Node2D
 var ground: Node2D
@@ -129,6 +132,7 @@ func _ready() -> void:
 	add_child(title_screen)
 	title_screen.start_pressed.connect(_on_start)
 	title_screen.upgrades_pressed.connect(_on_upgrades_open)
+	title_screen.weapons_pressed.connect(_on_weapons_open)
 
 	char_select = CharSelectScript.new()
 	add_child(char_select)
@@ -138,6 +142,10 @@ func _ready() -> void:
 	upgrades_ui = UpgradesScript.new()
 	add_child(upgrades_ui)
 	upgrades_ui.closed.connect(_on_upgrades_closed)
+
+	weapons_ui = WeaponsScript.new()
+	add_child(weapons_ui)
+	weapons_ui.closed.connect(_on_weapons_closed)
 
 	hud.pause_pressed.connect(_on_pause_button)
 	hud.set_run_visible(false)
@@ -178,6 +186,7 @@ func start_run() -> void:
 	_elite_idx = 0
 	intermission = 0.0
 	_apply_stage_theme()
+	_spawn_relics()
 	hud.reset()
 	hud.set_run_visible(true)
 	hud.hide_boss()
@@ -388,6 +397,18 @@ func _on_upgrades_open() -> void:
 	upgrades_ui.show_screen()
 
 
+func _on_weapons_open() -> void:
+	am.play("ui_click", -8.0)
+	title_screen.hide_screen()
+	weapons_ui.show_screen()
+
+
+func _on_weapons_closed() -> void:
+	am.play("ui_click", -8.0)
+	weapons_ui.hide_screen()
+	title_screen.show_screen()
+
+
 func _on_upgrades_closed() -> void:
 	am.play("ui_click", -8.0)
 	am.duck(false)
@@ -406,6 +427,16 @@ func _apply_stage_theme() -> void:
 			fog_tint = Color(0.35, 0.55, 0.4)
 		"cinder":
 			fog_tint = Color(0.6, 0.35, 0.25)
+		"desert":
+			fog_tint = Color(0.7, 0.6, 0.38)
+		"barrens":
+			fog_tint = Color(0.55, 0.45, 0.32)
+		"grove":
+			fog_tint = Color(0.35, 0.6, 0.35)
+		"drowned":
+			fog_tint = Color(0.3, 0.45, 0.7)
+		"bastion":
+			fog_tint = Color(0.6, 0.5, 0.4)
 	if fog_a:
 		fog_a.set("fog_color", Color(fog_tint, 0.05))
 	if fog_b:
@@ -415,7 +446,9 @@ func _apply_stage_theme() -> void:
 
 
 func _advance_stage() -> void:
-	gm.stage += 1
+	# Stages can be entered at any point, so walk forward through the list and
+	# wrap rather than running off the end.
+	gm.stage = (gm.stage + 1) % gm.STAGES.size()
 	gm.run_time = 0.0
 	gm.boss_spawned = false
 	gm.boss_alive = false
@@ -430,6 +463,7 @@ func _advance_stage() -> void:
 	if player:
 		player.heal(99999.0)
 	_apply_stage_theme()
+	_spawn_relics()
 	var sd: Dictionary = gm.stage_data()
 	hud.show_warning("STAGE %d — %s" % [gm.stage + 1, str(sd["name"])])
 	am.play("victory_sting", -6.0)
@@ -519,8 +553,11 @@ func _spawn_elite() -> void:
 
 func _spawn_enemy(etype: String, pos: Vector2):
 	var t: float = gm.run_time
-	var hp_m := (1.0 + t / 60.0 * 0.35) * (1.0 + float(gm.stage) * 0.8)
-	var dmg_m := (1.0 + t / 120.0 * 0.2) * (1.0 + float(gm.stage) * 0.35)
+	# Per-stage scaling was tuned for three stages; across eight the old 0.8 per
+	# stage reached 6.6x health by the last, which is unplayable as an opening
+	# stage now that any of them can be picked from the title screen.
+	var hp_m := (1.0 + t / 60.0 * 0.35) * (1.0 + float(gm.stage) * 0.45)
+	var dmg_m := (1.0 + t / 120.0 * 0.2) * (1.0 + float(gm.stage) * 0.2)
 	var e = EnemyScript.new()
 	e.setup(etype, pos, hp_m, dmg_m)
 	e.died.connect(_on_enemy_died.bind(e))
@@ -585,7 +622,8 @@ func _on_enemy_died(e) -> void:
 		for i in drops:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(20.0, 70.0)
 			spawn_shard(e.global_position + off, 5)
-		if gm.stage >= gm.STAGES.size() - 1:
+		gm.stages_cleared += 1
+		if gm.stages_cleared >= gm.stages_in_run():
 			gm.end_run(true)
 		else:
 			_advance_stage()
@@ -597,6 +635,43 @@ const SEP_CELL := 128.0
 const SEP_NEIGHBOURS: Array[Vector2i] = [
 	Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1),
 ]
+
+
+func _spawn_relics() -> void:
+	gm.begin_stage_relics(gm.stage)
+	if gm.relic_weapon == "":
+		return
+	var w: Dictionary = gm.WEAPONS.get(gm.relic_weapon, {})
+	var wname := str(w.get("name", gm.relic_weapon))
+	for i in gm.RELICS_PER_STAGE:
+		var r = RelicScript.new()
+		r.weapon_id = gm.relic_weapon
+		r.tint = gm.stage_data()["boss_aura"]
+		# Well away from the spawn point: these are meant to be searched for.
+		var a := randf() * TAU
+		r.position = Vector2.from_angle(a) * randf_range(620.0, 1380.0)
+		r.collected.connect(_on_relic_collected)
+		run.add_child(r)
+	_announce_relics(wname)
+
+
+func _announce_relics(wname: String) -> void:
+	# Let the stage banner land first, then say what is hidden here.
+	await get_tree().create_timer(2.4).timeout
+	if gm.state == gm.State.RUNNING and hud:
+		hud.show_warning("%s RELICS HIDDEN HERE" % wname.to_upper())
+
+
+func _on_relic_collected() -> void:
+	am.play("shard_pickup", -2.0)
+	jm.add_trauma(0.25)
+	var unlocked_id: String = gm.collect_relic()
+	if unlocked_id != "":
+		am.play("levelup_chime", -4.0)
+		jm.hit_stop(0.08)
+		hud.show_warning("%s UNLOCKED" % str(gm.class_by_id(unlocked_id)["name"]).to_upper())
+	else:
+		hud.show_warning("RELIC %d / %d" % [gm.relics_found, gm.RELICS_PER_STAGE])
 
 
 func _separation() -> void:

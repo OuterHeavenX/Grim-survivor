@@ -35,6 +35,15 @@ var _touch_last_msec := 0
 
 
 const STALE_TOUCH_MSEC := 2500
+# Class walk sheets built by tools/build_sprites.gd. A class missing here, or
+# whose sheet fails to load, keeps the procedural hooded figure below.
+const WALK_SHEETS := {"rogue": 6, "shadow": 6, "pyro": 6, "warden": 6}
+const WALK_FPS := 11.0
+
+var _spr: Sprite2D = null
+var _spr_facing := 0.0
+var _anim_t := 0.0
+
 var _hurt_flash := 0.0
 var _invuln := 0.0
 
@@ -45,6 +54,7 @@ func _ready() -> void:
 	var gm = get_node("/root/GameManager")
 	class_id = str(gm.selected_class)
 	_pal = class_palette()
+	_make_sprite()
 	max_hp = gm.class_hp() + gm.meta_hp_bonus()
 	hp = max_hp
 	weapons_node = WeaponsScript.new()
@@ -61,6 +71,20 @@ func _ready() -> void:
 	add_child(cam)
 	cam.make_current()
 	hp_changed.emit(hp, max_hp)
+
+
+func _make_sprite() -> void:
+	if not WALK_SHEETS.has(class_id):
+		return
+	var tex: Texture2D = load("res://assets/sprites/player_%s_walk.png" % class_id)
+	if tex == null:
+		return
+	_spr = Sprite2D.new()
+	_spr.texture = tex
+	_spr.hframes = int(WALK_SHEETS[class_id])
+	# Behind the node's own _draw(), so the shadow and health bar stay on top.
+	_spr.show_behind_parent = true
+	add_child(_spr)
 
 
 func _input(event: InputEvent) -> void:
@@ -141,6 +165,16 @@ func _physics_process(delta: float) -> void:
 	position.y = clampf(position.y, -ARENA, ARENA)
 	if joy_ui:
 		joy_ui.set_joy(_touch_id != -1, _touch_origin, _touch_cur)
+	if _spr != null:
+		# Only step the walk cycle while actually moving, so standing still
+		# does not moonwalk on the spot.
+		if velocity.length_squared() > 1.0:
+			_anim_t += delta
+			_spr_facing = velocity.angle() - PI * 0.5
+		_spr.frame = int(_anim_t * WALK_FPS) % _spr.hframes
+		_spr.rotation = _spr_facing - rotation
+		var f := clampf(_hurt_flash / 0.12, 0.0, 1.0)
+		_spr.modulate = Color(1.0, 1.0, 1.0).lerp(Color(2.4, 1.6, 1.6), f)
 	queue_redraw()
 
 
@@ -203,6 +237,14 @@ func on_vitality() -> void:
 
 
 func _draw() -> void:
+	if _spr != null:
+		var h := _spr.texture.get_height() * 0.5
+		draw_set_transform(Vector2(0, h * 0.84), 0.0, Vector2(1.0, 0.40))
+		draw_circle(Vector2.ZERO, 19.0, Color(0, 0, 0, 0.35))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_draw_health_bar(Vector2.ZERO)
+		return
+
 	var bob := sin(Time.get_ticks_msec() / 1000.0 * 6.0) * 2.0
 
 	draw_set_transform(Vector2(0, 30), 0.0, Vector2(1.0, 0.42))
@@ -233,6 +275,10 @@ func _draw() -> void:
 	draw_circle(o + Vector2(-3.2, -15), 1.6, eyes)
 	draw_circle(o + Vector2(3.2, -15), 1.6, eyes)
 
+	_draw_health_bar(o)
+
+
+func _draw_health_bar(o: Vector2) -> void:
 	var w := 64.0
 	var frac := clampf(hp / max_hp, 0.0, 1.0)
 	var bar_pos := o + Vector2(-w / 2.0, -48)

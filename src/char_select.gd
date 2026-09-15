@@ -88,11 +88,21 @@ func _ready() -> void:
 
 	vb.add_child(HSeparator.new())
 
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vb.add_child(scroll)
+
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+
 	for c in gm.CHAR_CLASSES:
 		var id: String = str(c["id"])
 		var card := _class_card(c)
 		cards[id] = card["refs"]
-		vb.add_child(card["node"])
+		list.add_child(card["node"])
 
 	vb.add_child(HSeparator.new())
 
@@ -212,6 +222,15 @@ func refresh() -> void:
 			action.icon = null
 			action.disabled = false
 			action.modulate = Color(1, 1, 1, 1)
+		elif cost < 0:
+			# Found, not bought: point at the stage that hides its relics.
+			sb.border_color = Color(0.3, 0.26, 0.2)
+			action.icon = null
+			var st: int = gm.relic_stage_for_class(id)
+			action.text = "STAGE %d" % (st + 1) if st >= 0 else "LOCKED"
+			action.disabled = true
+			action.modulate = Color(1, 1, 1, 0.9)
+			action.add_theme_color_override("font_disabled_color", Color(1.0, 0.82, 0.35))
 		else:
 			sb.border_color = Color(0.35, 0.2, 0.55)
 			action.icon = UIBits.shard_texture(28)

@@ -30,6 +30,9 @@ func _ready() -> void:
 	await get_tree().process_frame
 	_main = get_tree().get_first_node_in_group("main")
 	_gm = get_node("/root/GameManager")
+	# A run is now as many stages as the chosen length allows, so ask for a long
+	# one: these phases walk through several stages before expecting a victory.
+	_gm.selected_minutes = 30
 	_check(_main != null, "main found")
 	_main.start_run()
 	set_process(true)
@@ -204,6 +207,9 @@ func _process(_delta: float) -> void:
 			if _wait > 15:
 				_check(_gm.stage == 1 and _gm.state == _gm.State.RUNNING,
 					"regression: stage 1 boss advances rather than winning")
+				# Victory is now about clearing the chosen number of stages, not
+				# about reaching the last one in the list, so stand one short.
+				_gm.stages_cleared = _gm.stages_in_run() - 1
 				_gm.stage = _gm.STAGES.size() - 1
 				_gm.run_time = 299.95
 				_phase = 132
