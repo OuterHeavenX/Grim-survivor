@@ -56,6 +56,38 @@ func _process(_delta: float) -> void:
 				_check(_gm.CHAR_CLASSES.size() == _gm.WEAPONS.size(),
 					"one class per weapon")
 
+				# --- difficulty curve ------------------------------------
+				# Campaign mode walks the stages in order, so the curve has to
+				# climb. It used to run 14, 17, 24, 24, 17, 24, 17, 24 by worst
+				# contact damage: stage 7 was gentler than stage 6, and the
+				# titan showed up as early as stage 3.
+				var E = load("res://src/enemy.gd")
+				var prev_worst := 0.0
+				var prev_hp := 0.0
+				var prev_dmg := 0.0
+				for st in _gm.STAGES.size():
+					var hp_m: float = _gm.enemy_hp_mult(st, 0.0)
+					var dmg_m: float = _gm.enemy_dmg_mult(st, 0.0)
+					_check(hp_m >= prev_hp, "stage %d hp scaling does not dip" % (st + 1))
+					_check(dmg_m >= prev_dmg, "stage %d damage scaling does not dip" % (st + 1))
+					prev_hp = hp_m
+					prev_dmg = dmg_m
+					var worst := 0.0
+					for et in _gm.STAGES[st]["pool"]:
+						_check(E.TYPES.has(str(et)), "stage %d pool type %s exists" % [st + 1, str(et)])
+						worst = maxf(worst, float(E.TYPES[str(et)]["dmg"]))
+					_check(worst >= prev_worst,
+						"stage %d pool is not softer than the one before (%.0f vs %.0f)" % [
+							st + 1, worst, prev_worst])
+					prev_worst = worst
+
+				# Scaling is read from one place so the balance probe cannot
+				# measure a curve the game does not run.
+				_check(_gm.enemy_hp_mult(0, 0.0) == 1.0, "stage 1 hp scaling is the baseline")
+				_check(_gm.enemy_dmg_mult(0, 0.0) == 1.0, "stage 1 damage scaling is the baseline")
+				_check(_gm.enemy_hp_mult(3, 60.0) > _gm.enemy_hp_mult(3, 0.0),
+					"enemies harden as a stage goes on")
+
 				# --- campaign mode ---------------------------------------
 				# These mutate saved progress, and every suite shares the same
 				# user:// config, so the original state is snapshotted here and
@@ -225,7 +257,7 @@ func _process(_delta: float) -> void:
 					if p is Node2D and str(p.get("mode")) == "dagger":
 						fangs += 1
 						evo_flag = evo_flag or bool(p.get("evo"))
-				_check(fangs == 5, "evolved dagger fires 5 fangs, got %d" % fangs)
+				_check(fangs == 6, "evolved dagger fires 6 fangs, got %d" % fangs)
 				_check(evo_flag, "evo flag set on projectiles")
 
 

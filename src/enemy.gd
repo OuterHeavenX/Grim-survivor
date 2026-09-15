@@ -209,7 +209,7 @@ func _physics_process(delta: float) -> void:
 		if is_boss():
 			jm.hit_stop(0.06)
 			jm.add_trauma(0.35)
-		_tick = 0.7
+		_tick = 0.9
 	if is_boss():
 		_step_boss(delta, dir)
 	elif is_elite:

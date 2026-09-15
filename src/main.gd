@@ -566,8 +566,8 @@ func _spawn_enemy(etype: String, pos: Vector2):
 	# Per-stage scaling was tuned for three stages; across eight the old 0.8 per
 	# stage reached 6.6x health by the last, which is unplayable as an opening
 	# stage now that any of them can be picked from the title screen.
-	var hp_m := (1.0 + t / 60.0 * 0.35) * (1.0 + float(gm.stage) * 0.45)
-	var dmg_m := (1.0 + t / 120.0 * 0.2) * (1.0 + float(gm.stage) * 0.2)
+	var hp_m: float = gm.enemy_hp_mult(gm.stage, t)
+	var dmg_m: float = gm.enemy_dmg_mult(gm.stage, t)
 	var e = EnemyScript.new()
 	e.setup(etype, pos, hp_m, dmg_m)
 	e.died.connect(_on_enemy_died.bind(e))

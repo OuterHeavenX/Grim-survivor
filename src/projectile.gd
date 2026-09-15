@@ -22,7 +22,7 @@ var ring_color := Color(0.5, 0.85, 1.0, 0.8)
 var slow_mult := 0.5
 var slow_dur := 2.0
 var scythe_radius := 150.0
-var scythe_speed := 1.6
+var scythe_speed := 2.0
 var raven_target = null
 var cloud_radius := 140.0
 
@@ -207,7 +207,7 @@ func _tick_blade(delta: float) -> void:
 
 
 func _scythe_damage() -> float:
-	return 22.0 * (1.0 + 0.35 * float(weapon_lvl - 1)) * gm.might_mult() * (2.2 if evo else 1.0)
+	return 19.0 * (1.0 + 0.80 * float(weapon_lvl - 1)) * gm.might_mult() * (2.2 if evo else 1.0)
 
 
 
@@ -223,7 +223,7 @@ func _tick_scythe(delta: float) -> void:
 		if float(_hit_cd.get(id, 0.0)) > 0.0:
 			continue
 		if global_position.distance_to(en.global_position) < (64.0 if evo else 44.0) + float(en.get("body_radius")):
-			_hit_cd[id] = 0.5
+			_hit_cd[id] = 0.38
 
 
 			var pull_from: Vector2 = en.global_position + (en.global_position - main.player.global_position).normalized() * (200.0 if evo else 120.0)
