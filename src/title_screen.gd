@@ -8,6 +8,8 @@ var gm = null
 var best_label: Label
 var shard_label: Label
 var sound_btn: Button
+var stage_btns: Array[Button] = []
+var stage_label: Label
 var am = null
 
 
@@ -34,6 +36,8 @@ func _ready() -> void:
 	var title := _label("GRIM SURVIVORS", 76, Color(0.85, 0.88, 0.96))
 	vb.add_child(title)
 	vb.add_child(_label("Three stages. Fell the Cinder King.", 26, Color(0.55, 0.6, 0.72)))
+
+	vb.add_child(_stage_picker())
 
 	var start := Button.new()
 	start.text = "START"
@@ -83,7 +87,58 @@ func _ready() -> void:
 	sound_btn.offset_bottom = 96
 	sound_btn.pressed.connect(_on_sound)
 	add_child(sound_btn)
+
+	# show_screen() also refreshes, but the title is visible from boot without
+	# necessarily going through it, so seed the picker's state here.
+	_refresh_stages()
 	_refresh_sound()
+
+
+func _stage_picker() -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	for i in gm.STAGES.size():
+		var b := Button.new()
+		b.text = _numeral(i)
+		b.custom_minimum_size = Vector2(132, 72)
+		b.add_theme_font_size_override("font_size", 30)
+		b.pressed.connect(_on_stage.bind(i))
+		stage_btns.append(b)
+		row.add_child(b)
+	var rc := CenterContainer.new()
+	rc.add_child(row)
+	box.add_child(rc)
+
+	stage_label = _label("", 24, Color(0.62, 0.66, 0.78))
+	box.add_child(stage_label)
+	return box
+
+
+func _on_stage(i: int) -> void:
+	am.play("ui_click", -8.0)
+	gm.selected_stage = i
+	_refresh_stages()
+
+
+func _numeral(i: int) -> String:
+	const NUMERALS := ["I", "II", "III", "IV", "V"]
+	return NUMERALS[i] if i < NUMERALS.size() else str(i + 1)
+
+
+func _refresh_stages() -> void:
+	for i in stage_btns.size():
+		var chosen: bool = i == int(gm.selected_stage)
+		var b: Button = stage_btns[i]
+		b.text = "[ %s ]" % _numeral(i) if chosen else _numeral(i)
+		b.add_theme_color_override("font_color",
+			Color(1.0, 0.82, 0.35) if chosen else Color(0.5, 0.54, 0.64))
+	if stage_label != null:
+		var sd: Dictionary = gm.STAGES[clampi(int(gm.selected_stage), 0, gm.STAGES.size() - 1)]
+		stage_label.text = "%s  \u2014  %s" % [str(sd["name"]), str(sd["boss_name"])]
 
 
 func _label(text: String, fs: int, col: Color) -> Label:
@@ -98,6 +153,7 @@ func _label(text: String, fs: int, col: Color) -> Label:
 
 
 func show_screen() -> void:
+	_refresh_stages()
 	_refresh_sound()
 	var b: Dictionary = gm.best
 	var t := float(b.get("time", 0.0))

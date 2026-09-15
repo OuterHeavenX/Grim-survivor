@@ -229,6 +229,8 @@ var weapons := {}
 var passives := {}
 var evolved := {}
 var stage := 0
+# Stage picked on the title screen; a run starts there instead of the first.
+var selected_stage := 0
 var boss_spawned := false
 var boss_alive := false
 
@@ -414,7 +416,7 @@ func reset_run() -> void:
 	weapons = {class_start_weapon(): 1}
 	passives = {}
 	evolved = {}
-	stage = 0
+	stage = clampi(selected_stage, 0, STAGES.size() - 1)
 	boss_spawned = false
 	boss_alive = false
 	run_shards = 0
