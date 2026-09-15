@@ -117,23 +117,23 @@ func _fire(id: String, lvl: int) -> void:
 func _cooldown(id: String) -> float:
 	match id:
 		"dagger":
-			return 0.95
+			return 0.80
 		"fireball":
 			return 2.3
 		"frost":
-			return 3.2
-		"lightning":
 			return 2.6
+		"lightning":
+			return 2.4
 		"raven":
-			return 3.0
+			return 2.6
 		"lance":
-			return 2.0
+			return 1.5
 		"miasma":
 			return 4.6
 		"comet":
 			return 3.4
 		"sdagger":
-			return 0.7
+			return 0.6
 		"ember":
 			return 2.0
 		"bulwark":
@@ -151,14 +151,14 @@ func _fire_dagger(lvl: int) -> void:
 	if target == null:
 		return
 	am.play_ranged("dagger_throw", -10.0, 0.95, 1.1)
-	var n := 1 + lvl / 2 + (2 if evo else 0)
+	var n := 1 + (lvl + 1) / 2 + (2 if evo else 0)
 	var base_ang: float = (target.global_position - player.global_position).angle()
 	for i in n:
 		var p = ProjectileScript.new()
-		p.setup("dagger", _dmg(11.0 * (1.0 + 0.3 * float(lvl - 1)) * (2.2 if evo else 1.0)), player.global_position)
+		p.setup("dagger", _dmg(15.0 * (1.0 + 0.5 * float(lvl - 1)) * (2.2 if evo else 1.0)), player.global_position)
 		var ang := base_ang + (float(i) - float(n - 1) / 2.0) * 0.14
 		p.set("vel", Vector2.from_angle(ang) * 640.0)
-		p.set("pierce", 1 + lvl / 3 + (4 if evo else 0))
+		p.set("pierce", 1 + lvl / 2 + (4 if evo else 0))
 		p.set("evo", evo)
 		p.set("life", 1.6)
 		_main().run.add_child(p)
@@ -175,9 +175,9 @@ func _fire_fireball(lvl: int) -> void:
 			aim = (target.global_position - player.global_position).normalized()
 			aim = aim.rotated(randf_range(-0.15, 0.15) * float(i))
 		var p = ProjectileScript.new()
-		p.setup("fireball", _dmg(26.0 * (1.0 + 0.35 * float(lvl - 1)) * (2.0 if evo else 1.0)), player.global_position)
+		p.setup("fireball", _dmg(22.0 * (1.0 + 0.22 * float(lvl - 1)) * (2.0 if evo else 1.0)), player.global_position)
 		p.set("vel", aim * 380.0)
-		p.set("aoe", (105.0 + 18.0 * float(lvl)) * (1.8 if evo else 1.0))
+		p.set("aoe", (98.0 + 10.0 * float(lvl)) * (1.8 if evo else 1.0))
 		p.set("evo", evo)
 		p.set("life", 2.2)
 		_main().run.add_child(p)
@@ -187,7 +187,7 @@ func _fire_frost(lvl: int) -> void:
 	var evo: bool = gm.is_evolved("frost")
 	am.play_ranged("frost_shimmer", -8.0, 0.9, 1.1)
 	var p = ProjectileScript.new()
-	p.setup("frost", _dmg(14.0 * (1.0 + 0.3 * float(lvl - 1)) * (2.0 if evo else 1.0)), player.global_position)
+	p.setup("frost", _dmg(17.0 * (1.0 + 0.58 * float(lvl - 1)) * (2.0 if evo else 1.0)), player.global_position)
 	p.set("ring_max", (120.0 + 22.0 * float(lvl)) * (1.7 if evo else 1.0))
 	p.set("slow_dur", (1.5 + 0.4 * float(lvl)) * (2.0 if evo else 1.0))
 	p.set("evo", evo)
@@ -196,8 +196,8 @@ func _fire_frost(lvl: int) -> void:
 
 func _fire_lightning(lvl: int) -> void:
 	var evo: bool = gm.is_evolved("lightning")
-	var chains := (2 + lvl) * (2 if evo else 1)
-	var dmg := _dmg(20.0 * (1.0 + 0.3 * float(lvl - 1)) * (2.0 if evo else 1.0))
+	var chains := (2 + lvl + lvl / 2) * (2 if evo else 1)
+	var dmg := _dmg(24.0 * (1.0 + 0.45 * float(lvl - 1)) * (2.0 if evo else 1.0))
 	var reach := 420.0 if evo else 300.0
 	var from: Vector2 = player.global_position
 	var skip := {}
@@ -220,9 +220,9 @@ func _fire_lightning(lvl: int) -> void:
 
 func _fire_raven(lvl: int) -> void:
 	var evo: bool = gm.is_evolved("raven")
-	var n := 2 + lvl / 2 + (3 if evo else 0)
+	var n := 3 + lvl / 2 + (3 if evo else 0)
 	var pierce := 1 + lvl / 2 + (3 if evo else 0)
-	var dmg := _dmg(16.0 * (1.0 + 0.3 * float(lvl - 1)) * (2.0 if evo else 1.0))
+	var dmg := _dmg(30.0 * (1.0 + 0.18 * float(lvl - 1)) * (2.0 if evo else 1.0))
 	am.play_ranged("raven_cry", -8.0, 0.9, 1.15)
 	for i in n:
 		var r = ProjectileScript.new()
@@ -240,14 +240,18 @@ func _fire_lance(lvl: int) -> void:
 	if target == null:
 		return
 	am.play_ranged("dagger_throw", -8.0, 0.55, 0.7)
-	var ang: float = (target.global_position - player.global_position).angle()
-	var p = ProjectileScript.new()
-	p.setup("lance", _dmg(30.0 * (1.0 + 0.35 * float(lvl - 1)) * (2.4 if evo else 1.0)), player.global_position)
-	p.set("vel", Vector2.from_angle(ang) * (900.0 if evo else 720.0))
-	p.set("pierce", (3 + lvl * 2) * (2 if evo else 1))
-	p.set("evo", evo)
-	p.set("life", 1.8)
-	_main().run.add_child(p)
+	var base_ang: float = (target.global_position - player.global_position).angle()
+	# One spear down one line was never going to keep up, however hard it hit.
+	var n := 1 + (lvl - 1) / 2 + (1 if evo else 0)
+	for i in n:
+		var ang := base_ang + (float(i) - float(n - 1) / 2.0) * 0.22
+		var p = ProjectileScript.new()
+		p.setup("lance", _dmg(40.0 * (1.0 + 0.5 * float(lvl - 1)) * (2.4 if evo else 1.0)), player.global_position)
+		p.set("vel", Vector2.from_angle(ang) * (900.0 if evo else 720.0))
+		p.set("pierce", (3 + lvl * 2) * (2 if evo else 1))
+		p.set("evo", evo)
+		p.set("life", 1.8)
+		_main().run.add_child(p)
 
 
 
@@ -269,8 +273,8 @@ func _fire_miasma(lvl: int) -> void:
 		pos = anchor.global_position
 	am.play_ranged("frost_shimmer", -6.0, 0.6, 0.8)
 	var p = ProjectileScript.new()
-	p.setup("miasma", _dmg(9.0 * (1.0 + 0.3 * float(lvl - 1)) * (2.2 if evo else 1.0)), pos)
-	p.set("cloud_radius", (120.0 + 20.0 * float(lvl)) * (1.8 if evo else 1.0))
+	p.setup("miasma", _dmg(9.0 * (1.0 + 0.25 * float(lvl - 1)) * (2.2 if evo else 1.0)), pos)
+	p.set("cloud_radius", (112.0 + 14.0 * float(lvl)) * (1.8 if evo else 1.0))
 	p.set("life", (3.2 + 0.5 * float(lvl)) * (1.6 if evo else 1.0))
 	p.set("slow_dur", 1.2)
 	p.set("evo", evo)
@@ -288,8 +292,8 @@ func _fire_comet(lvl: int) -> void:
 	for i in n:
 		var e = foes[randi() % foes.size()]
 		var p = ProjectileScript.new()
-		p.setup("comet", _dmg(42.0 * (1.0 + 0.35 * float(lvl - 1)) * (2.0 if evo else 1.0)), e.global_position)
-		p.set("aoe", (105.0 + 15.0 * float(lvl)) * (1.6 if evo else 1.0))
+		p.setup("comet", _dmg(34.0 * (1.0 + 0.22 * float(lvl - 1)) * (2.0 if evo else 1.0)), e.global_position)
+		p.set("aoe", (95.0 + 10.0 * float(lvl)) * (1.6 if evo else 1.0))
 		p.set("evo", evo)
 		p.set("life", 0.7)
 		_main().run.add_child(p)
@@ -306,10 +310,10 @@ func _fire_sdagger(lvl: int) -> void:
 	var base_ang: float = (target.global_position - player.global_position).angle()
 	for i in n:
 		var p = ProjectileScript.new()
-		p.setup("sdagger", _dmg(8.0 * (1.0 + 0.3 * float(lvl - 1)) * (2.2 if evo else 1.0)), player.global_position)
+		p.setup("sdagger", _dmg(11.0 * (1.0 + 0.45 * float(lvl - 1)) * (2.2 if evo else 1.0)), player.global_position)
 		var ang := base_ang + (float(i) - float(n - 1) / 2.0) * 0.16
 		p.set("vel", Vector2.from_angle(ang) * 700.0)
-		p.set("pierce", lvl / 3 + (2 if evo else 0))
+		p.set("pierce", 1 + lvl / 2 + (2 if evo else 0))
 		p.set("evo", evo)
 		p.set("life", 1.4)
 		_main().run.add_child(p)
@@ -328,7 +332,7 @@ func _fire_ember(lvl: int) -> void:
 			aim = (target.global_position - player.global_position).normalized()
 			aim = aim.rotated(randf_range(-0.2, 0.2) * float(i))
 		var p = ProjectileScript.new()
-		p.setup("fireball", _dmg(16.0 * (1.0 + 0.35 * float(lvl - 1)) * (2.0 if evo else 1.0)), player.global_position)
+		p.setup("fireball", _dmg(18.0 * (1.0 + 0.32 * float(lvl - 1)) * (2.0 if evo else 1.0)), player.global_position)
 		p.set("vel", aim * 420.0)
 		p.set("aoe", (75.0 + 14.0 * float(lvl)) * (1.7 if evo else 1.0))
 		p.set("evo", evo)

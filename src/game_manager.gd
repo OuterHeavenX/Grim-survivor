@@ -266,49 +266,49 @@ const STAGES := [
 		"name": "ASHEN HOLLOW", "boss": "herald", "boss_name": "HERALD OF VORGATH",
 		"boss_aura": Color(0.55, 0.3, 1.0), "theme": "ashen",
 		"relics": ["lance", "frost"],
-		"pool": ["skeleton", "husk", "wisp"],
+		"pool": ["skeleton", "wisp", "husk"],
 	},
 	{
 		"name": "THE WEEPING MARSH", "boss": "maw", "boss_name": "MAW OF THE MIRE",
 		"boss_aura": Color(0.35, 1.0, 0.45), "theme": "marsh",
 		"relics": ["sdagger", "miasma"],
-		"pool": ["bogling", "mire", "wisp"],
+		"pool": ["bogling", "wisp", "husk"],
 	},
 	{
 		"name": "THRONE OF CINDERS", "boss": "cinderking", "boss_name": "THE CINDER KING",
 		"boss_aura": Color(1.0, 0.45, 0.15), "theme": "cinder",
 		"relics": ["ember", "fireball"],
-		"pool": ["imp", "titan", "bogling"],
+		"pool": ["imp", "bogling", "husk"],
 	},
 	{
 		"name": "THE BONE DESERT", "boss": "herald", "boss_name": "THE PALE HERALD",
 		"boss_aura": Color(1.0, 0.85, 0.5), "theme": "desert",
 		"relics": ["comet", "scythe"],
-		"pool": ["skeleton", "imp", "titan"],
+		"pool": ["skeleton", "imp", "mire"],
 	},
 	{
 		"name": "ROTGROVE", "boss": "maw", "boss_name": "THE ROTGROVE MAW",
 		"boss_aura": Color(0.5, 1.0, 0.35), "theme": "grove",
 		"relics": ["raven", "blades"],
-		"pool": ["bogling", "mire", "husk"],
+		"pool": ["bogling", "mire", "imp"],
 	},
 	{
 		"name": "THE SUNKEN ROAD", "boss": "cinderking", "boss_name": "WARDEN OF THE ROAD",
 		"boss_aura": Color(0.9, 0.5, 0.25), "theme": "barrens",
 		"relics": ["bulwark", "lightning"],
-		"pool": ["husk", "titan", "wisp"],
+		"pool": ["husk", "mire", "titan"],
 	},
 	{
 		"name": "THE DROWNED REACH", "boss": "maw", "boss_name": "THE DROWNED MAW",
 		"boss_aura": Color(0.4, 0.75, 1.0), "theme": "drowned",
 		"relics": ["frost", "miasma"],
-		"pool": ["mire", "wisp", "bogling"],
+		"pool": ["mire", "wisp", "titan"],
 	},
 	{
 		"name": "THE LAST BASTION", "boss": "cinderking", "boss_name": "THE ASHEN SOVEREIGN",
 		"boss_aura": Color(1.0, 0.35, 0.12), "theme": "bastion",
 		"relics": ["fireball", "comet"],
-		"pool": ["titan", "imp", "husk"],
+		"pool": ["titan", "imp", "mire"],
 	},
 ]
 
@@ -463,6 +463,19 @@ func class_by_id(id: String) -> Dictionary:
 # stages' relic weapons, so they have no new character to hand over; they pay
 # out instead rather than being a reward-less wall at the end of the campaign.
 const CAMPAIGN_SHARDS := [15, 20, 25, 35, 45, 60, 90, 140]
+
+
+# Enemy scaling. These live here rather than inline in main.gd so the balance
+# probe measures the same curve the game runs, instead of a copy of it that can
+# drift.
+func enemy_hp_mult(stage_idx: int, t: float) -> float:
+	return (1.0 + t / 60.0 * 0.35) * (1.0 + float(stage_idx) * 0.45)
+
+
+func enemy_dmg_mult(stage_idx: int, t: float) -> float:
+	# 0.2 per stage stacked with the time curve reached 3.6x by the last stage,
+	# where three touching foes killed a fully upgraded player in 0.7s.
+	return (1.0 + t / 120.0 * 0.2) * (1.0 + float(stage_idx) * 0.14)
 
 
 func campaign_stage_open(i: int) -> bool:
