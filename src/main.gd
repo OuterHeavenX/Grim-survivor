@@ -21,6 +21,9 @@ const GroundScript := preload("res://src/ground.gd")
 const FogScript := preload("res://src/fog.gd")
 
 const MAX_ENEMIES := 70
+# A hard ceiling for drifted-away pickups, in case a kill storm outruns the
+# lifetime fade. Oldest go first.
+const MAX_PICKUPS := 140
 const ARENA := 1500.0
 const ELITE_TIMES := [60.0, 105.0, 150.0, 195.0, 240.0, 270.0]
 const MAX_LIVE_ELITES := 3
@@ -460,6 +463,9 @@ func _advance_stage() -> void:
 	for e in get_tree().get_nodes_in_group("enemies"):
 		jm.gold_burst(e.global_position)
 		e.queue_free()
+	for group in ["gems", "shards", "relics"]:
+		for n in get_tree().get_nodes_in_group(group):
+			n.queue_free()
 	if player:
 		player.heal(99999.0)
 	_apply_stage_theme()
@@ -732,7 +738,25 @@ func _push_apart(pos: PackedVector2Array, rad: PackedFloat32Array, i: int, j: in
 		pos[j] += push
 
 
+func _cap_group(group: String, limit: int) -> void:
+	var list := get_tree().get_nodes_in_group(group)
+	var over := list.size() - limit
+	var i := 0
+	while over > 0 and i < list.size():
+		var n = list[i]
+		if is_instance_valid(n):
+			# queue_free() only takes effect at the end of the frame, so the
+			# group would still report the old size and the cap would do
+			# nothing during a burst -- which is exactly when it is needed.
+			# Leaving the group is immediate.
+			n.remove_from_group(group)
+			n.queue_free()
+			over -= 1
+		i += 1
+
+
 func spawn_gem(pos: Vector2, value: int) -> void:
+	_cap_group("gems", MAX_PICKUPS)
 	var g = GemScript.new()
 	g.value = value
 	g.position = pos
@@ -740,6 +764,7 @@ func spawn_gem(pos: Vector2, value: int) -> void:
 
 
 func spawn_shard(pos: Vector2, value: int) -> void:
+	_cap_group("shards", MAX_PICKUPS)
 	var s = ShardScript.new()
 	s.value = value
 	s.position = pos

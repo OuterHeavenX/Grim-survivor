@@ -4,6 +4,7 @@ extends Node
 var _phase := 0
 var _wait := 0
 var _fails := 0
+var _aged_gem = null
 var _main = null
 var _gm = null
 var _player = null
@@ -65,6 +66,25 @@ func _process(_delta: float) -> void:
 				_check(_gm.relic_weapon == "miasma",
 					"a stage moves on once its first relic class is unlocked")
 				_check(not _gm.unlock_class("flame"), "relic classes cannot be bought")
+
+				# Pickups must not accumulate for the whole run: uncollected
+				# gems used to live forever, so a long session piled up
+				# thousands, each still running physics and redrawing.
+				var GemS := load("res://src/gem.gd")
+				_check(GemS.LIFETIME > 0.0, "gems have a lifetime")
+				var before := get_tree().get_nodes_in_group("gems").size()
+				for i in _main.MAX_PICKUPS + 25:
+					_main.spawn_gem(Vector2(9000, 9000), 1)
+				_check(get_tree().get_nodes_in_group("gems").size() <= _main.MAX_PICKUPS + 1,
+					"gem count is capped, got %d" % get_tree().get_nodes_in_group("gems").size())
+
+				# ...and one past its life frees itself rather than lingering.
+				var g = GemS.new()
+				g.position = Vector2(9000, -9000)
+				g.value = 1
+				_main.run.add_child(g)
+				g.set("_age", GemS.LIFETIME + 1.0)
+				_aged_gem = g
 				for sd in _gm.STAGES:
 					var pool: Array = sd["pool"]
 					_check(pool.size() == 3, "stage pool x3: " + str(sd["name"]))
@@ -147,6 +167,8 @@ func _process(_delta: float) -> void:
 				_wait = 0
 		4:
 			if _wait > 3:
+				_check(_aged_gem == null or not is_instance_valid(_aged_gem),
+					"a gem past its lifetime frees itself")
 				_check(_gm.stage == 2, "advanced to stage 3, got %d" % _gm.stage)
 				_check(_gm.run_time < 2.0, "stage timer reset")
 				_check(not _gm.boss_alive, "boss flag cleared")
