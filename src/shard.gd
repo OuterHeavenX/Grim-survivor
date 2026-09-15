@@ -8,6 +8,12 @@ var gm = null
 var player = null
 var _age := 0.0
 
+# Pickups used to live until collected, so anything that drifted out of reach
+# stayed forever: a long run accumulated thousands, each still running physics
+# and redrawing every frame. Give them a generous life and fade them out.
+const LIFETIME := 45.0
+const FADE := 5.0
+
 
 func _ready() -> void:
 	add_to_group("shards")
@@ -17,6 +23,11 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_age += delta
+	if _age >= LIFETIME:
+		queue_free()
+		return
+	if _age > LIFETIME - FADE:
+		modulate.a = clampf((LIFETIME - _age) / FADE, 0.0, 1.0)
 	position += vel * delta
 	vel = vel.move_toward(Vector2.ZERO, 420.0 * delta)
 	if player == null or not is_instance_valid(player):

@@ -12,9 +12,18 @@
 		"wisp": 6
 	},
 	"players": {
+		"bonewright": 6,
+		"dancer": 6,
+		"flame": 6,
+		"plague": 6,
 		"pyro": 6,
+		"ravenmark": 6,
+		"reaper": 6,
+		"rime": 6,
 		"rogue": 6,
 		"shadow": 6,
+		"starcaller": 6,
+		"storm": 6,
 		"warden": 6
 	},
 	"walk": {

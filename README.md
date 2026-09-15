@@ -7,9 +7,13 @@ Eight stages, five minutes each, any of them selectable from the title screen.
 A run is 5, 10, 15, 20 or 30 minutes -- that many five-minute stages, each
 ending in a boss -- and finishing the last one is the victory.
 
-Four playable classes — Hooded Rogue, Shadowblade, Pyromancer, Iron Warden —
-unlocked with soul shards, plus six meta upgrade tracks banked across runs.
-Enemies scale with the stage, so later ground is harder ground. Targets both
+Thirteen playable survivors, one per weapon, so no two start the same way. Four
+are bought with soul shards; the other nine are found — each stage hides a pair
+of relics for one weapon, and collecting both unlocks whoever wields it. Any
+weapon can also be carried in a two-slot loadout or picked up on level-up.
+
+Six meta upgrade tracks bank across runs. Enemies scale with the stage, so later
+ground is harder ground. Targets both
 desktop and mobile web (portrait, 720×1280, on-screen joystick when a
 touchscreen is present).
 
