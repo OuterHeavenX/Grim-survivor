@@ -11,6 +11,12 @@
 		"titan": 6,
 		"wisp": 6
 	},
+	"players": {
+		"pyro": 6,
+		"rogue": 6,
+		"shadow": 6,
+		"warden": 6
+	},
 	"walk": {
 		"bogling": 9,
 		"cinderking": 8,

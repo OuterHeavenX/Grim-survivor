@@ -16,6 +16,18 @@ extends SceneTree
 const PACKS := "res://assets/packs/"
 const ZOMBIES := PACKS + "top-down-zombies/Zombies/PNG Animations/"
 const BOSSES := PACKS + "topdown-bosses/Monsters/PNG Animations/"
+const SOLDIERS := PACKS + "top-down-soldiers/Characters/PNG_Bodyparts&Animations/PNG Animations/"
+
+# Playable class -> [walk directory, drawn height]. The pack ships two bodies,
+# so the four classes are told apart by the weapon animation each uses. This is
+# placeholder art: the classes are a hooded rogue and a pyromancer, not
+# soldiers. Swapping it is dropping four PNGs in and rerunning this tool.
+const PLAYERS := {
+	"rogue":  [SOLDIERS + "Man/Walk_knife", 78],
+	"shadow": [SOLDIERS + "Girl/Walk_knife", 74],
+	"pyro":   [SOLDIERS + "Girl/Walk_FireThrhrower", 76],
+	"warden": [SOLDIERS + "Man/Walk_bat", 84],
+}
 
 # enemy type -> [character directory, drawn walk height in px]
 # Heights are body_radius * 3.2, matching how large the procedural art read.
@@ -119,10 +131,30 @@ func _initialize() -> void:
 		death_counts[etype] = death[1]
 		print("%-11s death %2d frames %4dx%-4d %7.1f KB" % ["", death[1], death[2], death[3], bytes / 1024.0])
 
+	var player_counts := {}
+	for cls in PLAYERS:
+		var dir_path: String = PLAYERS[cls][0]
+		var target_h: int = PLAYERS[cls][1]
+		var names := _frames_in(dir_path)
+		if names.is_empty():
+			printerr("no walk frames for class ", cls, " in ", dir_path)
+			continue
+		var probe := Image.load_from_file(dir_path + "/" + names[0])
+		if probe == null:
+			continue
+		var built := _build(dir_path, names, float(target_h) / float(probe.get_height()))
+		if built.is_empty():
+			continue
+		var b := _emit(built[0], "res://assets/sprites/player_%s_walk.png" % cls)
+		total += b
+		player_counts[cls] = built[1]
+		print("%-11s walk  %2d frames %4dx%-4d %7.1f KB" % ["player:" + cls, built[1], built[2], built[3], b / 1024.0])
+
 	var f := FileAccess.open("res://assets/sprites/manifest.json", FileAccess.WRITE)
-	f.store_string(JSON.stringify({"walk": walk_counts, "death": death_counts}, "\t"))
+	f.store_string(JSON.stringify({"walk": walk_counts, "death": death_counts, "players": player_counts}, "\t"))
 	f.close()
 	print("TOTAL: %.2f MB  (%d walk sheets, %d death sheets)" % [total / 1048576.0, walk_counts.size(), death_counts.size()])
 	print("WALK_SHEETS := ", walk_counts)
 	print("DEATH_SHEETS := ", death_counts)
+	print("PLAYER_SHEETS := ", player_counts)
 	quit()
