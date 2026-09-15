@@ -43,6 +43,19 @@ var _dash_phase := 0
 var _wisp_dir := Vector2.ZERO
 var _summon_t := 9.0
 
+# Boss patterns. Each boss has one signature move on a cooldown; _cast_phase
+# runs 0 wind-up -> 1 commit, so the telegraph and the hit cannot drift apart.
+var _cast_t := 5.0
+var _cast_phase := 0
+var _cast_dir := Vector2.ZERO
+var _enraged := false
+
+# Elite affix. Elites used to be one flavour -- eight times the health, same
+# behaviour -- which made every one of them the same slow slog.
+var affix := ""
+var _affix_t := 0.0
+var _shielded := false
+
 # Walk-cycle sheets built by tools/build_sprites.gd from assets/packs/. Frame
 # counts must match what that tool reports; an entry missing here (or a sheet
 # that fails to load) just falls back to the procedural _draw_* body below.
@@ -97,17 +110,34 @@ func _make_sprite() -> void:
 	add_child(_spr)
 
 
-func make_elite() -> void:
+func make_elite(forced := "") -> void:
 	is_elite = true
-	max_hp *= 8.0
+	affix = forced if forced != "" else AFFIXES[randi() % AFFIXES.size()]
+	# A splitting elite dies twice over, so it does not also need the full
+	# health bar, and a swift one trades bulk for the speed.
+	var hp_mult := 8.0
+	match affix:
+		"swift":
+			hp_mult = 5.0
+			speed *= 1.75
+		"splitting":
+			hp_mult = 5.5
+		"warded":
+			hp_mult = 6.5
+			_affix_t = 0.0
+		"venomous":
+			hp_mult = 7.0
+			_affix_t = 0.8
+	max_hp *= hp_mult
 	hp = max_hp
 	dmg *= 1.5
-	speed *= 1.15
+	if affix != "swift":
+		speed *= 1.15
 	body_radius *= 1.35
 	scale = Vector2(1.35, 1.35)
 	var lm = get_node_or_null("/root/LightingMan")
 	if lm:
-		lm.attach_aura(self, Color(1.0, 0.32, 0.16), 2.4, 0.9)
+		lm.attach_aura(self, AFFIX_COLORS.get(affix, Color(1.0, 0.32, 0.16)), 2.4, 0.9)
 
 
 func _ready() -> void:
@@ -152,7 +182,10 @@ func _physics_process(delta: float) -> void:
 				_dash_phase = 0
 				_dash_t = randf_range(0.8, 1.4)
 	velocity = dir * spd + _kb
-	_kb = _kb.move_toward(Vector2.ZERO, 900.0 * delta)
+	# A maw mid-charge is carried by _kb, so it must not be damped like a
+	# knockback or the lunge dies a frame after it starts.
+	var damp := 380.0 if (etype == "maw" and _cast_phase == 0 and _kb.length() > 300.0) else 900.0
+	_kb = _kb.move_toward(Vector2.ZERO, damp * delta)
 	move_and_slide()
 	if _spr != null:
 		_spr.frame = int(_anim * WALK_FPS) % _spr.hframes
@@ -166,21 +199,183 @@ func _physics_process(delta: float) -> void:
 	_tick -= delta
 	if _tick <= 0.0 and dist < body_radius + 22.0 and bool(player.get("alive")):
 		player.take_damage(dmg)
+		if is_elite and affix == "vampiric":
+			# Feeds on what it hits, so ignoring it is not a strategy.
+			hp = minf(max_hp, hp + dmg * 2.5)
+			if main and main.has_method("spawn_damage_number"):
+				main.spawn_damage_number(global_position, dmg * 2.5,
+					AFFIX_COLORS["vampiric"])
+			queue_redraw()
 		if is_boss():
 			jm.hit_stop(0.06)
 			jm.add_trauma(0.35)
 		_tick = 0.7
 	if is_boss():
-		_summon_t -= delta
-		if _summon_t <= 0.0:
-			_summon_t = 9.0
-			if main and main.has_method("summon_minions"):
-				main.summon_minions(global_position)
+		_step_boss(delta, dir)
+	elif is_elite:
+		_step_elite(delta)
 	queue_redraw()
+
+
+# --- boss patterns -------------------------------------------------------
+#
+# Before this, all three bosses walked at you and summoned skeletons every nine
+# seconds. With three boss bodies across eight stages that is the same fight
+# eight times over, so each one now has a signature move.
+
+const CAST_GAP := {"herald": 6.5, "maw": 7.5, "cinderking": 6.0}
+const WINDUP := {"herald": 0.85, "maw": 1.0, "cinderking": 0.7}
+
+
+func _aura_color() -> Color:
+	if main and main.gm and main.gm.has_method("stage_data"):
+		return main.gm.stage_data().get("boss_aura", Color(1.0, 0.5, 0.2))
+	return Color(1.0, 0.5, 0.2)
+
+
+func _step_boss(delta: float, dir: Vector2) -> void:
+	# Enrage once, at 40%. The fight should get louder as it closes out.
+	if not _enraged and hp < max_hp * 0.4:
+		_enraged = true
+		speed *= 1.25
+		if jm:
+			jm.add_trauma(0.5)
+		if main and main.hud and main.hud.has_method("show_warning"):
+			main.hud.show_warning("ENRAGED")
+	_summon_t -= delta
+	if _summon_t <= 0.0:
+		_summon_t = 6.0 if _enraged else 9.0
+		if main and main.has_method("summon_minions"):
+			main.summon_minions(global_position)
+	_cast_t -= delta
+	if _cast_t > 0.0:
+		return
+	if _cast_phase == 0:
+		# Wind up: paint the telegraph, hold still enough to be read.
+		_cast_phase = 1
+		_cast_dir = dir
+		_cast_t = float(WINDUP.get(etype, 0.85))
+		_telegraph()
+	else:
+		_cast_phase = 0
+		var gap := float(CAST_GAP.get(etype, 6.5))
+		_cast_t = gap * (0.62 if _enraged else 1.0)
+		_commit()
+
+
+func _telegraph() -> void:
+	if main == null or not main.has_method("spawn_hazard"):
+		return
+	var col := _aura_color()
+	match etype:
+		"maw":
+			# Show the lane it is about to charge down.
+			var h: Node2D = main.spawn_hazard("lane", global_position, 0.0, col)
+			h.lane_to = global_position + _cast_dir * 520.0
+			h.radius = body_radius * 1.1
+			h.life = float(WINDUP["maw"])
+		"cinderking":
+			# Mark the ground under and around the player.
+			var target: Vector2 = player.global_position if player else global_position
+			for i in 4:
+				var p := target + Vector2.from_angle(randf() * TAU) * randf_range(0.0, 150.0)
+				var e = main.spawn_hazard("eruption", p, dmg * 1.1, col)
+				e.radius = 74.0
+				e.telegraph = float(WINDUP["cinderking"])
+				e.life = e.telegraph + 0.45
+		_:
+			# Herald gathers light before the volley.
+			if lm_node():
+				lm_node().flash(global_position, col, 2.0, 3.0, float(WINDUP["herald"]))
+	if am:
+		am.play_ranged("boss_roar", -12.0, 1.15, 1.3)
+
+
+func _commit() -> void:
+	if main == null or not main.has_method("spawn_hazard"):
+		return
+	var col := _aura_color()
+	match etype:
+		"herald":
+			# A ring of slow bolts: dodgeable, but it takes the arena away from
+			# you rather than chasing you down.
+			var n := 12 if _enraged else 9
+			var base := randf() * TAU
+			for i in n:
+				var a := base + TAU * float(i) / float(n)
+				var b = main.spawn_hazard("bolt", global_position, dmg * 0.8, col)
+				b.vel = Vector2.from_angle(a) * 210.0
+				b.radius = 12.0
+				b.life = 3.4
+		"maw":
+			# Commit to the lane it painted, whatever the player did with it.
+			_kb = _cast_dir * 1150.0
+			if jm:
+				jm.add_trauma(0.4)
+		"cinderking":
+			# The eruptions land on their own timers; the king just roars.
+			if jm:
+				jm.hit_stop(0.05)
+				jm.add_trauma(0.3)
+	if am:
+		am.play_ranged("boss_roar", -6.0, 0.85, 0.95)
+
+
+func lm_node():
+	return get_node_or_null("/root/LightingMan")
+
+
+# --- elite affixes -------------------------------------------------------
+
+const AFFIXES := ["swift", "venomous", "vampiric", "warded", "splitting"]
+const AFFIX_COLORS := {
+	"swift": Color(0.45, 0.9, 1.0),
+	"venomous": Color(0.5, 1.0, 0.35),
+	"vampiric": Color(1.0, 0.25, 0.35),
+	"warded": Color(1.0, 0.85, 0.35),
+	"splitting": Color(0.8, 0.45, 1.0),
+}
+const AFFIX_NAMES := {
+	"swift": "SWIFT", "venomous": "VENOMOUS", "vampiric": "VAMPIRIC",
+	"warded": "WARDED", "splitting": "SPLITTING",
+}
+
+
+func _step_elite(delta: float) -> void:
+	match affix:
+		"venomous":
+			# Leaves a trail worth stepping around.
+			_affix_t -= delta
+			if _affix_t <= 0.0:
+				_affix_t = 0.8
+				if main and main.has_method("spawn_hazard"):
+					var pool = main.spawn_hazard("pool", global_position, dmg * 0.35,
+						AFFIX_COLORS["venomous"])
+					pool.radius = 58.0
+					pool.life = 4.5
+		"warded":
+			# A ward that comes back if you cannot burst through it.
+			_affix_t -= delta
+			if _affix_t <= 0.0:
+				_affix_t = 6.0
+				_shielded = true
+				queue_redraw()
 
 
 func take_damage(amount: float, from_pos: Vector2, knockback: float) -> void:
 	if dead:
+		return
+	if _shielded:
+		# The ward eats the hit whole, then has to be rebuilt. Burst it or work
+		# around it; chipping at it achieves nothing.
+		_shielded = false
+		_flash = 0.12
+		_affix_t = 6.0
+		if main and main.has_method("spawn_damage_number"):
+			main.spawn_damage_number(global_position, 0.0, AFFIX_COLORS["warded"])
+		if jm:
+			jm.shockwave(global_position, AFFIX_COLORS["warded"], 70.0)
+		queue_redraw()
 		return
 	hp -= amount
 	_flash = 0.12
@@ -203,6 +398,8 @@ func take_damage(amount: float, from_pos: Vector2, knockback: float) -> void:
 			main.spawn_gem(global_position, xp_value)
 		if main and main.has_method("spawn_shard"):
 			_roll_shard_drop()
+		if is_elite and affix == "splitting":
+			_split()
 		queue_free()
 	else:
 		am.play_ranged("hit_flesh", -16.0, 0.85, 1.2)
@@ -272,16 +469,33 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, body_radius + 2.0, Color(1, 1, 1, 0.55))
 
 
+func _split() -> void:
+	# Two lesser copies, no affix of their own -- a splitting elite that spawned
+	# splitting elites would never stop.
+	if main == null or not main.has_method("spawn_split"):
+		return
+	for i in 2:
+		var off := Vector2.from_angle(randf() * TAU) * randf_range(26.0, 48.0)
+		main.spawn_split(etype, global_position + off, max_hp * 0.16, dmg)
+
+
 func _draw_elite_aura() -> void:
 	var pulse := 0.5 + 0.5 * sin(_anim * 6.0)
+	# The ring carries the affix colour and the label names it, so you can tell
+	# what you are fighting before it reaches you.
+	var c: Color = AFFIX_COLORS.get(affix, Color(1.0, 0.38, 0.12))
 
 	draw_arc(Vector2.ZERO, body_radius + 9.0, 0, TAU, 40,
-		Color(1.0, 0.38 + 0.22 * pulse, 0.12, 0.85), 5.0)
+		Color(c.r, c.g * (0.8 + 0.2 * pulse), c.b, 0.85), 5.0)
 	draw_arc(Vector2.ZERO, body_radius + 16.0, 0, TAU, 40,
-		Color(1.0, 0.6, 0.15, 0.25 + 0.25 * pulse), 3.0)
+		Color(c.r, c.g, c.b, 0.25 + 0.25 * pulse), 3.0)
+	if _shielded:
+		draw_arc(Vector2.ZERO, body_radius + 23.0, 0, TAU, 44,
+			Color(1.0, 0.92, 0.55, 0.55 + 0.35 * pulse), 4.0)
 
-	draw_string(ThemeDB.fallback_font, Vector2(-50, -body_radius - 14.0), "ELITE",
-		HORIZONTAL_ALIGNMENT_CENTER, 100, 22, Color(1.0, 0.72, 0.2))
+	var label: String = AFFIX_NAMES.get(affix, "ELITE")
+	draw_string(ThemeDB.fallback_font, Vector2(-70, -body_radius - 14.0), label,
+		HORIZONTAL_ALIGNMENT_CENTER, 140, 22, c)
 
 
 func _shadow(r: float) -> void:
