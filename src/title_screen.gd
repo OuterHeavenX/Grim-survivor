@@ -13,6 +13,8 @@ var stage_btns: Array[Button] = []
 var stage_label: Label
 var length_btns: Array[Button] = []
 var length_label: Label
+var mode_btns: Array[Button] = []
+var mode_label: Label
 var root_page: VBoxContainer
 var play_page: VBoxContainer
 var am = null
@@ -104,6 +106,26 @@ func _stage_picker() -> Control:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 
+	# Mode first: it decides whether the stage grid below is gated, so it wants
+	# to be the thing read first.
+	var mrow := HBoxContainer.new()
+	mrow.add_theme_constant_override("separation", 10)
+	mrow.alignment = BoxContainer.ALIGNMENT_CENTER
+	for m in [false, true]:
+		var b := Button.new()
+		b.text = "CAMPAIGN" if m else "FREE PLAY"
+		b.custom_minimum_size = Vector2(176, 54)
+		b.add_theme_font_size_override("font_size", 22)
+		b.pressed.connect(_on_mode.bind(m))
+		mode_btns.append(b)
+		mrow.add_child(b)
+	var mc := CenterContainer.new()
+	mc.add_child(mrow)
+	box.add_child(mc)
+
+	mode_label = _label("", 20, Color(0.62, 0.66, 0.78))
+	box.add_child(mode_label)
+
 	# Eight stages will not fit on one phone-width row, so wrap them.
 	var grid := GridContainer.new()
 	grid.columns = 4
@@ -151,8 +173,25 @@ func _on_length(m: int) -> void:
 
 
 func _on_stage(i: int) -> void:
+	if not gm.campaign_stage_open(i):
+		# Locked in campaign. Say so rather than silently doing nothing.
+		am.play("ui_click", -16.0)
+		if mode_label != null:
+			mode_label.text = "STAGE %s IS LOCKED \u2014 CLEAR STAGE %s FIRST" % [
+				_numeral(i), _numeral(int(gm.campaign_unlocked) - 1)]
+		return
 	am.play("ui_click", -8.0)
 	gm.selected_stage = i
+	_refresh_stages()
+
+
+func _on_mode(on: bool) -> void:
+	am.play("ui_click", -8.0)
+	gm.campaign = on
+	# Switching into campaign with a locked stage selected would start a run the
+	# mode does not allow, so pull the selection back to the frontier.
+	if not gm.campaign_stage_open(int(gm.selected_stage)):
+		gm.selected_stage = maxi(0, int(gm.campaign_unlocked) - 1)
 	_refresh_stages()
 
 
@@ -164,10 +203,27 @@ func _numeral(i: int) -> String:
 func _refresh_stages() -> void:
 	for i in stage_btns.size():
 		var chosen: bool = i == int(gm.selected_stage)
+		var open_i: bool = gm.campaign_stage_open(i)
 		var b: Button = stage_btns[i]
+		if not open_i:
+			b.text = "\u2500"
+			b.add_theme_color_override("font_color", Color(0.34, 0.36, 0.42))
+			continue
 		b.text = "[ %s ]" % _numeral(i) if chosen else _numeral(i)
 		b.add_theme_color_override("font_color",
 			Color(1.0, 0.82, 0.35) if chosen else Color(0.5, 0.54, 0.64))
+
+	for i in mode_btns.size():
+		var is_campaign: bool = i == 1
+		var picked: bool = is_campaign == bool(gm.campaign)
+		var mb: Button = mode_btns[i]
+		mb.add_theme_color_override("font_color",
+			Color(1.0, 0.82, 0.35) if picked else Color(0.5, 0.54, 0.64))
+	if mode_label != null:
+		if gm.campaign:
+			mode_label.text = "%s \u2014 CLEAR A STAGE TO OPEN THE NEXT" % gm.campaign_progress()
+		else:
+			mode_label.text = "EVERY STAGE OPEN \u2014 NO PROGRESS SAVED"
 	if stage_label != null:
 		var sd: Dictionary = gm.STAGES[clampi(int(gm.selected_stage), 0, gm.STAGES.size() - 1)]
 		stage_label.text = "%s  \u2014  %s" % [str(sd["name"]), str(sd["boss_name"])]

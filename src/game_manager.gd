@@ -342,6 +342,15 @@ var revives_left := 0
 var selected_class := "rogue"
 var unlocked := {"rogue": 1}
 
+# Campaign mode. Free play leaves every stage open, which is how the game has
+# always behaved; the campaign is the structured path that hands out the
+# characters, so the nine relic-only ones stop depending on finding a 26px
+# pickup in a 3000x3000 arena.
+var campaign := false
+# How many stages the campaign has opened. Always at least 1: stage one is
+# where a campaign starts.
+var campaign_unlocked := 1
+
 var state: int = State.TITLE
 var run_time := 0.0
 var kills := 0
@@ -448,6 +457,60 @@ func class_by_id(id: String) -> Dictionary:
 		if str(c["id"]) == id:
 			return c
 	return CHAR_CLASSES[0]
+
+
+# Shards for clearing a campaign stage. The last two stages reuse earlier
+# stages' relic weapons, so they have no new character to hand over; they pay
+# out instead rather than being a reward-less wall at the end of the campaign.
+const CAMPAIGN_SHARDS := [15, 20, 25, 35, 45, 60, 90, 140]
+
+
+func campaign_stage_open(i: int) -> bool:
+	# Free play was always open to every stage and stays that way.
+	if not campaign:
+		return true
+	return i < campaign_unlocked
+
+
+func campaign_progress() -> String:
+	return "%d / %d STAGES" % [campaign_unlocked, STAGES.size()]
+
+
+func chars_for_stage(i: int) -> Array:
+	# The campaign hands over the characters whose weapon is hidden in that
+	# stage as a relic, so the two paths agree on which stage owns which
+	# character -- the campaign is just the one that cannot be missed.
+	var out: Array = []
+	if i < 0 or i >= STAGES.size():
+		return out
+	var want: Array = STAGES[i].get("relics", [])
+	for c in CHAR_CLASSES:
+		if want.has(str(c.get("weapon", ""))):
+			out.append(c)
+	return out
+
+
+func clear_campaign_stage(i: int) -> Array:
+	# Returns the characters this clear actually unlocked, so the HUD can name
+	# them. Already-owned ones are dropped: telling the player they unlocked
+	# something they have had for an hour is noise.
+	var freshly: Array = []
+	if not campaign:
+		return freshly
+	if i < 0 or i >= STAGES.size():
+		return freshly
+	for c in chars_for_stage(i):
+		var cid: String = str(c["id"])
+		if not is_class_unlocked(cid):
+			unlocked[cid] = 1
+			freshly.append(str(c["name"]))
+	if i < CAMPAIGN_SHARDS.size():
+		shards += int(CAMPAIGN_SHARDS[i])
+	# Opening the next stage is what makes this a campaign; clearing stage 3 a
+	# second time must not push the frontier past stage 4.
+	campaign_unlocked = clampi(maxi(campaign_unlocked, i + 2), 1, STAGES.size())
+	save_meta()
+	return freshly
 
 
 func is_class_unlocked(id: String) -> bool:
@@ -769,6 +832,9 @@ func load_meta() -> void:
 			var cid: String = str(c["id"])
 			if int(cfg.get_value("meta", "char_" + cid, 0)) > 0 or cid == "rogue":
 				unlocked[cid] = 1
+		campaign_unlocked = clampi(
+			int(cfg.get_value("meta", "campaign_unlocked", 1)), 1, STAGES.size())
+		campaign = int(cfg.get_value("meta", "campaign_mode", 0)) > 0
 		var sel := str(cfg.get_value("meta", "char_selected", "rogue"))
 		selected_class = sel if is_class_unlocked(sel) else "rogue"
 		_load_loadout(cfg)
@@ -777,6 +843,8 @@ func load_meta() -> void:
 		meta = {}
 		unlocked = {"rogue": 1}
 		selected_class = "rogue"
+		campaign_unlocked = 1
+		campaign = false
 
 
 func save_meta() -> void:
@@ -790,6 +858,8 @@ func save_meta() -> void:
 		var cid: String = str(c["id"])
 		cfg.set_value("meta", "char_" + cid, 1 if is_class_unlocked(cid) else 0)
 	cfg.set_value("meta", "char_selected", selected_class)
+	cfg.set_value("meta", "campaign_unlocked", campaign_unlocked)
+	cfg.set_value("meta", "campaign_mode", 1 if campaign else 0)
 	cfg.set_value("meta", "loadout", ",".join(loadout))
 	cfg.save(SAVE_PATH)
 

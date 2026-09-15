@@ -659,6 +659,11 @@ func _on_enemy_died(e) -> void:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(20.0, 70.0)
 			spawn_shard(e.global_position + off, 5)
 		gm.stages_cleared += 1
+		# Campaign progress is banked the moment the stage falls, not at the end
+		# of the run: dying in stage 5 should not cost the player stages 1-4.
+		var freshly: Array = gm.clear_campaign_stage(gm.stage)
+		if not freshly.is_empty():
+			_announce_unlocks(freshly)
 		if gm.stages_cleared >= gm.stages_in_run():
 			gm.end_run(true)
 		else:
@@ -689,6 +694,18 @@ func _spawn_relics() -> void:
 		r.collected.connect(_on_relic_collected)
 		run.add_child(r)
 	_announce_relics(wname)
+
+
+func _announce_unlocks(names: Array) -> void:
+	# One banner per character, staggered, so unlocking two at once does not
+	# overwrite the first before it has been read.
+	var delay := 0.0
+	for n in names:
+		var t := get_tree().create_timer(delay)
+		t.timeout.connect(func():
+			if hud and is_instance_valid(hud):
+				hud.show_warning("%s UNLOCKED" % str(n).to_upper()))
+		delay += 2.2
 
 
 func _announce_relics(wname: String) -> void:
