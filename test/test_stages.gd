@@ -56,6 +56,95 @@ func _process(_delta: float) -> void:
 				_check(_gm.CHAR_CLASSES.size() == _gm.WEAPONS.size(),
 					"one class per weapon")
 
+				# --- campaign mode ---------------------------------------
+				# These mutate saved progress, and every suite shares the same
+				# user:// config, so the original state is snapshotted here and
+				# put back before the phase ends. Without that, running the
+				# suite twice would have the second run start from whatever
+				# this phase happened to unlock.
+				var snap_unlocked: Dictionary = _gm.unlocked.duplicate()
+				var snap_shards: int = _gm.shards
+				var snap_unlocked_n: int = _gm.campaign_unlocked
+				var snap_mode: bool = _gm.campaign
+
+				_gm.campaign = false
+				var all_open := true
+				for i in _gm.STAGES.size():
+					if not _gm.campaign_stage_open(i):
+						all_open = false
+				_check(all_open, "free play leaves every stage open")
+				_check(_gm.clear_campaign_stage(0).is_empty(),
+					"free play does not bank campaign progress")
+
+				_gm.campaign = true
+				_gm.campaign_unlocked = 1
+				_gm.unlocked = {"rogue": 1}
+				_check(_gm.campaign_stage_open(0), "campaign opens at stage 1")
+				_check(not _gm.campaign_stage_open(1), "campaign gates stage 2")
+				_check(not _gm.campaign_stage_open(7), "campaign gates the last stage")
+
+				# Clearing a stage opens the next one and hands over the
+				# characters whose weapons are that stage's relics.
+				var got: Array = _gm.clear_campaign_stage(0)
+				_check(_gm.campaign_unlocked == 2, "clearing stage 1 opens stage 2")
+				_check(_gm.campaign_stage_open(1), "stage 2 is now open")
+				var want0: Array = []
+				for c in _gm.chars_for_stage(0):
+					want0.append(str(c["name"]))
+				_check(got.size() == want0.size() and got.size() > 0,
+					"stage 1 unlocked %d character(s)" % got.size())
+				for c in _gm.chars_for_stage(0):
+					_check(_gm.is_class_unlocked(str(c["id"])),
+						"campaign unlocked " + str(c["id"]))
+				_check(_gm.shards > snap_shards, "clearing a stage pays shards")
+
+				# Re-clearing an already-cleared stage must not push the
+				# frontier forward again.
+				var before_n: int = _gm.campaign_unlocked
+				var again: Array = _gm.clear_campaign_stage(0)
+				_check(_gm.campaign_unlocked == before_n,
+					"re-clearing stage 1 does not advance the frontier")
+				_check(again.is_empty(),
+					"re-clearing announces nothing already owned")
+
+				# Clearing out of order cannot move the frontier backwards.
+				# campaign_unlocked counts open stages, so clearing index 4
+				# (the fifth stage) opens index 5 and leaves six open.
+				_gm.clear_campaign_stage(4)
+				_check(_gm.campaign_unlocked == 6, "clearing stage 5 opens stage 6")
+				_gm.clear_campaign_stage(0)
+				_check(_gm.campaign_unlocked == 6, "frontier never moves backwards")
+
+				# The campaign is a complete path to every character: stages
+				# 1-6 between them cover all twelve non-starter classes, so
+				# nothing is left depending on relic luck.
+				_gm.unlocked = {"rogue": 1}
+				_gm.campaign_unlocked = 1
+				for i in _gm.STAGES.size():
+					_gm.clear_campaign_stage(i)
+				var missing: Array = []
+				for c in _gm.CHAR_CLASSES:
+					if not _gm.is_class_unlocked(str(c["id"])):
+						missing.append(str(c["id"]))
+				_check(missing.is_empty(),
+					"finishing the campaign unlocks every class, missing %s" % str(missing))
+				_check(_gm.campaign_unlocked == _gm.STAGES.size(),
+					"campaign frontier stops at the last stage")
+
+				# Progress survives a save/load round trip.
+				_gm.campaign_unlocked = 4
+				_gm.save_meta()
+				_gm.campaign_unlocked = 1
+				_gm.load_meta()
+				_check(_gm.campaign_unlocked == 4, "campaign progress persists")
+
+				_gm.unlocked = snap_unlocked
+				_gm.shards = snap_shards
+				_gm.campaign_unlocked = snap_unlocked_n
+				_gm.campaign = snap_mode
+				_gm.save_meta()
+				_check(not _gm.campaign, "campaign state restored for later suites")
+
 				_gm.unlocked = {"rogue": 1}
 				_gm.begin_stage_relics(1)
 				_check(_gm.relic_weapon == "sdagger", "stage 2 hides shadow dagger relics")
