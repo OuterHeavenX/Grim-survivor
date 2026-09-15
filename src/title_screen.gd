@@ -2,6 +2,7 @@ extends CanvasLayer
 
 
 signal start_pressed
+signal weapons_pressed
 signal upgrades_pressed
 
 var gm = null
@@ -12,6 +13,8 @@ var stage_btns: Array[Button] = []
 var stage_label: Label
 var length_btns: Array[Button] = []
 var length_label: Label
+var root_page: VBoxContainer
+var play_page: VBoxContainer
 var am = null
 
 
@@ -39,26 +42,27 @@ func _ready() -> void:
 	vb.add_child(title)
 	vb.add_child(_label("Eight stages. Choose your ground and your hour.", 26, Color(0.55, 0.6, 0.72)))
 
-	vb.add_child(_stage_picker())
+	# Two pages so the title is not a wall of controls: the root offers the
+	# three things you can do, and PLAY opens the run setup.
+	root_page = VBoxContainer.new()
+	root_page.add_theme_constant_override("separation", 16)
+	vb.add_child(root_page)
+	root_page.add_child(_big_button("PLAY", Color(0.9, 0.93, 1.0),
+		func () -> void: _show_page(true)))
+	root_page.add_child(_big_button("ARMOURY", Color(0.95, 0.75, 0.35),
+		func () -> void: weapons_pressed.emit()))
+	root_page.add_child(_big_button("UPGRADES", Color(0.85, 0.6, 1.0),
+		func () -> void: upgrades_pressed.emit()))
 
-	var start := Button.new()
-	start.text = "START"
-	start.custom_minimum_size = Vector2(420, 110)
-	start.add_theme_font_size_override("font_size", 40)
-	start.pressed.connect(func () -> void: start_pressed.emit())
-	var sc := CenterContainer.new()
-	sc.add_child(start)
-	vb.add_child(sc)
-
-	var upg := Button.new()
-	upg.text = "UPGRADES"
-	upg.custom_minimum_size = Vector2(420, 90)
-	upg.add_theme_font_size_override("font_size", 32)
-	upg.add_theme_color_override("font_color", Color(0.85, 0.6, 1.0))
-	upg.pressed.connect(func () -> void: upgrades_pressed.emit())
-	var uc := CenterContainer.new()
-	uc.add_child(upg)
-	vb.add_child(uc)
+	play_page = VBoxContainer.new()
+	play_page.add_theme_constant_override("separation", 10)
+	play_page.visible = false
+	vb.add_child(play_page)
+	play_page.add_child(_stage_picker())
+	play_page.add_child(_big_button("START", Color(0.9, 0.93, 1.0),
+		func () -> void: start_pressed.emit()))
+	play_page.add_child(_big_button("BACK", Color(0.55, 0.6, 0.72),
+		func () -> void: _show_page(false)))
 
 	var shard_center := CenterContainer.new()
 	var shard_hb := HBoxContainer.new()
@@ -180,6 +184,24 @@ func _refresh_stages() -> void:
 		length_label.text = "%d min  \u2014  %d stage%s" % [int(gm.selected_minutes), n, "" if n == 1 else "s"]
 
 
+func _big_button(text: String, col: Color, on_press: Callable) -> Control:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(420, 92)
+	b.add_theme_font_size_override("font_size", 34)
+	b.add_theme_color_override("font_color", col)
+	b.pressed.connect(on_press)
+	var c := CenterContainer.new()
+	c.add_child(b)
+	return c
+
+
+func _show_page(play: bool) -> void:
+	am.play("ui_click", -8.0)
+	root_page.visible = not play
+	play_page.visible = play
+
+
 func _label(text: String, fs: int, col: Color) -> Label:
 	var l := Label.new()
 	l.text = text
@@ -192,6 +214,10 @@ func _label(text: String, fs: int, col: Color) -> Label:
 
 
 func show_screen() -> void:
+	if root_page != null:
+		root_page.visible = true
+	if play_page != null:
+		play_page.visible = false
 	_refresh_stages()
 	_refresh_sound()
 	var b: Dictionary = gm.best

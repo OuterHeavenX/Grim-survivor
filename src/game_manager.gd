@@ -256,6 +256,10 @@ var evolved := {}
 var stage := 0
 # Stage picked on the title screen; a run starts there instead of the first.
 var selected_stage := 0
+# Weapons carried into a run. Empty means "just the class's own weapon", which
+# is how the game behaved before loadouts existed.
+const MAX_LOADOUT := 3
+var loadout: Array[String] = []
 # Total run length in minutes, chosen on the title screen. RUN_DURATION is one
 # stage, so this is really "how many stages before victory".
 const RUN_LENGTHS := [5, 10, 15, 20, 30]
@@ -442,6 +446,35 @@ func stages_in_run() -> int:
 	return maxi(1, int(round(float(selected_minutes) * 60.0 / RUN_DURATION)))
 
 
+func loadout_has(id: String) -> bool:
+	return loadout.has(id)
+
+
+func toggle_loadout(id: String) -> bool:
+	# Returns true if the weapon ended up in the loadout.
+	if not WEAPONS.has(id):
+		return false
+	if loadout.has(id):
+		loadout.erase(id)
+		save_meta()
+		return false
+	if loadout.size() >= MAX_LOADOUT:
+		return false
+	loadout.append(id)
+	save_meta()
+	return true
+
+
+func run_start_weapons() -> Dictionary:
+	var out := {}
+	for id in loadout:
+		if WEAPONS.has(id) and out.size() < MAX_WEAPONS:
+			out[id] = 1
+	if out.is_empty():
+		out[class_start_weapon()] = 1
+	return out
+
+
 func reset_run() -> void:
 	stages_cleared = 0
 	run_time = 0.0
@@ -449,7 +482,7 @@ func reset_run() -> void:
 	level = 1
 	xp = 0
 	pending_levelups = 0
-	weapons = {class_start_weapon(): 1}
+	weapons = run_start_weapons()
 	passives = {}
 	evolved = {}
 	stage = clampi(selected_stage, 0, STAGES.size() - 1)
@@ -584,6 +617,7 @@ func load_meta() -> void:
 				unlocked[cid] = 1
 		var sel := str(cfg.get_value("meta", "char_selected", "rogue"))
 		selected_class = sel if is_class_unlocked(sel) else "rogue"
+		_load_loadout(cfg)
 	else:
 		shards = 0
 		meta = {}
@@ -602,7 +636,19 @@ func save_meta() -> void:
 		var cid: String = str(c["id"])
 		cfg.set_value("meta", "char_" + cid, 1 if is_class_unlocked(cid) else 0)
 	cfg.set_value("meta", "char_selected", selected_class)
+	cfg.set_value("meta", "loadout", ",".join(loadout))
 	cfg.save(SAVE_PATH)
+
+
+func _load_loadout(cfg: ConfigFile) -> void:
+	loadout.clear()
+	var raw := str(cfg.get_value("meta", "loadout", ""))
+	if raw == "":
+		return
+	for id in raw.split(",", false):
+		var w := str(id).strip_edges()
+		if WEAPONS.has(w) and not loadout.has(w) and loadout.size() < MAX_LOADOUT:
+			loadout.append(w)
 
 
 func load_best() -> void:

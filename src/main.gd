@@ -14,6 +14,7 @@ const CharSelectScript := preload("res://src/char_select.gd")
 const EndScript := preload("res://src/end_screen.gd")
 const PauseScript := preload("res://src/pause_menu.gd")
 const UpgradesScript := preload("res://src/upgrades_ui.gd")
+const WeaponsScript := preload("res://src/weapons_ui.gd")
 const BgScript := preload("res://src/bg.gd")
 const GroundScript := preload("res://src/ground.gd")
 const FogScript := preload("res://src/fog.gd")
@@ -38,6 +39,7 @@ var char_select = null
 var end_screen = null
 var pause_menu = null
 var upgrades_ui = null
+var weapons_ui = null
 var fog_a: Node2D
 var fog_b: Node2D
 var ground: Node2D
@@ -129,6 +131,7 @@ func _ready() -> void:
 	add_child(title_screen)
 	title_screen.start_pressed.connect(_on_start)
 	title_screen.upgrades_pressed.connect(_on_upgrades_open)
+	title_screen.weapons_pressed.connect(_on_weapons_open)
 
 	char_select = CharSelectScript.new()
 	add_child(char_select)
@@ -138,6 +141,10 @@ func _ready() -> void:
 	upgrades_ui = UpgradesScript.new()
 	add_child(upgrades_ui)
 	upgrades_ui.closed.connect(_on_upgrades_closed)
+
+	weapons_ui = WeaponsScript.new()
+	add_child(weapons_ui)
+	weapons_ui.closed.connect(_on_weapons_closed)
 
 	hud.pause_pressed.connect(_on_pause_button)
 	hud.set_run_visible(false)
@@ -386,6 +393,18 @@ func _on_upgrades_open() -> void:
 	am.duck(true)
 	title_screen.hide_screen()
 	upgrades_ui.show_screen()
+
+
+func _on_weapons_open() -> void:
+	am.play("ui_click", -8.0)
+	title_screen.hide_screen()
+	weapons_ui.show_screen()
+
+
+func _on_weapons_closed() -> void:
+	am.play("ui_click", -8.0)
+	weapons_ui.hide_screen()
+	title_screen.show_screen()
 
 
 func _on_upgrades_closed() -> void:
