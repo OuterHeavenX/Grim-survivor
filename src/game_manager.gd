@@ -167,6 +167,96 @@ const CHAR_CLASSES := [
 			"lining": Color(0.85, 0.65, 0.25), "eyes": Color(1.0, 0.85, 0.4),
 		},
 	},
+	{
+		"id": "flame", "name": "Flamecaller", "cost": -1,
+		"flavor": "Answers the horde with falling fire.",
+		"hp": 85.0, "dmg": 1.1, "speed": 0.95, "magnet": 1.0, "xp": 1.0,
+		"weapon": "fireball",
+		"palette": {
+			"cloak": Color(0.16, 0.06, 0.04), "tunic": Color(0.6, 0.22, 0.08),
+			"lining": Color(0.95, 0.5, 0.12), "eyes": Color(1.0, 0.7, 0.2),
+		},
+	},
+	{
+		"id": "rime", "name": "Rimewarden", "cost": -1,
+		"flavor": "Stills the marsh with killing cold.",
+		"hp": 110.0, "dmg": 0.9, "speed": 0.92, "magnet": 1.1, "xp": 1.0,
+		"weapon": "frost",
+		"palette": {
+			"cloak": Color(0.05, 0.1, 0.16), "tunic": Color(0.2, 0.45, 0.6),
+			"lining": Color(0.6, 0.9, 1.0), "eyes": Color(0.7, 0.95, 1.0),
+		},
+	},
+	{
+		"id": "dancer", "name": "Bladedancer", "cost": -1,
+		"flavor": "Never still, never unarmed.",
+		"hp": 85.0, "dmg": 0.95, "speed": 1.2, "magnet": 1.0, "xp": 1.0,
+		"weapon": "blades",
+		"palette": {
+			"cloak": Color(0.08, 0.08, 0.1), "tunic": Color(0.45, 0.45, 0.5),
+			"lining": Color(0.85, 0.85, 0.9), "eyes": Color(0.9, 0.95, 1.0),
+		},
+	},
+	{
+		"id": "storm", "name": "Stormbound", "cost": -1,
+		"flavor": "The arc finds every throat in turn.",
+		"hp": 90.0, "dmg": 1.0, "speed": 1.05, "magnet": 1.0, "xp": 1.1,
+		"weapon": "lightning",
+		"palette": {
+			"cloak": Color(0.06, 0.07, 0.14), "tunic": Color(0.3, 0.32, 0.7),
+			"lining": Color(0.7, 0.8, 1.0), "eyes": Color(0.85, 0.9, 1.0),
+		},
+	},
+	{
+		"id": "reaper", "name": "The Reaper", "cost": -1,
+		"flavor": "Harvests in a wide, patient circle.",
+		"hp": 105.0, "dmg": 1.05, "speed": 0.9, "magnet": 1.0, "xp": 1.0,
+		"weapon": "scythe",
+		"palette": {
+			"cloak": Color(0.04, 0.05, 0.06), "tunic": Color(0.18, 0.2, 0.22),
+			"lining": Color(0.5, 0.6, 0.55), "eyes": Color(0.6, 1.0, 0.7),
+		},
+	},
+	{
+		"id": "ravenmark", "name": "Ravenmark", "cost": -1,
+		"flavor": "Sends the flock ahead to feed.",
+		"hp": 85.0, "dmg": 0.95, "speed": 1.1, "magnet": 1.2, "xp": 1.0,
+		"weapon": "raven",
+		"palette": {
+			"cloak": Color(0.05, 0.05, 0.08), "tunic": Color(0.22, 0.2, 0.3),
+			"lining": Color(0.5, 0.45, 0.6), "eyes": Color(0.9, 0.85, 0.4),
+		},
+	},
+	{
+		"id": "bonewright", "name": "Bonewright", "cost": -1,
+		"flavor": "Drives a spear through whole ranks.",
+		"hp": 115.0, "dmg": 1.15, "speed": 0.88, "magnet": 0.95, "xp": 1.0,
+		"weapon": "lance",
+		"palette": {
+			"cloak": Color(0.1, 0.09, 0.07), "tunic": Color(0.5, 0.46, 0.36),
+			"lining": Color(0.85, 0.82, 0.7), "eyes": Color(1.0, 0.95, 0.75),
+		},
+	},
+	{
+		"id": "plague", "name": "Plaguebearer", "cost": -1,
+		"flavor": "Leaves a trail the horde chokes on.",
+		"hp": 100.0, "dmg": 0.9, "speed": 0.98, "magnet": 1.0, "xp": 1.15,
+		"weapon": "miasma",
+		"palette": {
+			"cloak": Color(0.05, 0.1, 0.05), "tunic": Color(0.28, 0.45, 0.18),
+			"lining": Color(0.6, 0.9, 0.3), "eyes": Color(0.8, 1.0, 0.4),
+		},
+	},
+	{
+		"id": "starcaller", "name": "Starcaller", "cost": -1,
+		"flavor": "Marks the ground, then the sky answers.",
+		"hp": 90.0, "dmg": 1.2, "speed": 0.95, "magnet": 1.0, "xp": 1.0,
+		"weapon": "comet",
+		"palette": {
+			"cloak": Color(0.06, 0.05, 0.12), "tunic": Color(0.35, 0.25, 0.6),
+			"lining": Color(0.8, 0.7, 1.0), "eyes": Color(1.0, 0.9, 0.6),
+		},
+	},
 ]
 
 
@@ -175,41 +265,49 @@ const STAGES := [
 	{
 		"name": "ASHEN HOLLOW", "boss": "herald", "boss_name": "HERALD OF VORGATH",
 		"boss_aura": Color(0.55, 0.3, 1.0), "theme": "ashen",
+		"relics": ["lance", "frost"],
 		"pool": ["skeleton", "husk", "wisp"],
 	},
 	{
 		"name": "THE WEEPING MARSH", "boss": "maw", "boss_name": "MAW OF THE MIRE",
 		"boss_aura": Color(0.35, 1.0, 0.45), "theme": "marsh",
+		"relics": ["sdagger", "miasma"],
 		"pool": ["bogling", "mire", "wisp"],
 	},
 	{
 		"name": "THRONE OF CINDERS", "boss": "cinderking", "boss_name": "THE CINDER KING",
 		"boss_aura": Color(1.0, 0.45, 0.15), "theme": "cinder",
+		"relics": ["ember", "fireball"],
 		"pool": ["imp", "titan", "bogling"],
 	},
 	{
 		"name": "THE BONE DESERT", "boss": "herald", "boss_name": "THE PALE HERALD",
 		"boss_aura": Color(1.0, 0.85, 0.5), "theme": "desert",
+		"relics": ["comet", "scythe"],
 		"pool": ["skeleton", "imp", "titan"],
 	},
 	{
 		"name": "ROTGROVE", "boss": "maw", "boss_name": "THE ROTGROVE MAW",
 		"boss_aura": Color(0.5, 1.0, 0.35), "theme": "grove",
+		"relics": ["raven", "blades"],
 		"pool": ["bogling", "mire", "husk"],
 	},
 	{
 		"name": "THE SUNKEN ROAD", "boss": "cinderking", "boss_name": "WARDEN OF THE ROAD",
 		"boss_aura": Color(0.9, 0.5, 0.25), "theme": "barrens",
+		"relics": ["bulwark", "lightning"],
 		"pool": ["husk", "titan", "wisp"],
 	},
 	{
 		"name": "THE DROWNED REACH", "boss": "maw", "boss_name": "THE DROWNED MAW",
 		"boss_aura": Color(0.4, 0.75, 1.0), "theme": "drowned",
+		"relics": ["frost", "miasma"],
 		"pool": ["mire", "wisp", "bogling"],
 	},
 	{
 		"name": "THE LAST BASTION", "boss": "cinderking", "boss_name": "THE ASHEN SOVEREIGN",
 		"boss_aura": Color(1.0, 0.35, 0.12), "theme": "bastion",
+		"relics": ["fireball", "comet"],
 		"pool": ["titan", "imp", "husk"],
 	},
 ]
@@ -258,8 +356,16 @@ var stage := 0
 var selected_stage := 0
 # Weapons carried into a run. Empty means "just the class's own weapon", which
 # is how the game behaved before loadouts existed.
-const MAX_LOADOUT := 3
+const MAX_LOADOUT := 2
 var loadout: Array[String] = []
+
+# Relics: each stage hides a pair of a particular weapon's relics, and finding
+# both unlocks the character who wields it. Which weapon a stage offers is the
+# first of its candidates whose character is still locked, so a stage stops
+# offering what you already have.
+const RELICS_PER_STAGE := 2
+var relic_weapon := ""
+var relics_found := 0
 # Total run length in minutes, chosen on the title screen. RUN_DURATION is one
 # stage, so this is really "how many stages before victory".
 const RUN_LENGTHS := [5, 10, 15, 20, 30]
@@ -351,7 +457,9 @@ func is_class_unlocked(id: String) -> bool:
 func unlock_class(id: String) -> bool:
 	var c := class_by_id(id)
 	var cost := int(c["cost"])
-	if is_class_unlocked(id) or shards < cost:
+	# A negative cost marks a class that shards cannot buy: it is found in the
+	# world, not purchased.
+	if cost < 0 or is_class_unlocked(id) or shards < cost:
 		return false
 	shards -= cost
 	unlocked[id] = 1
@@ -444,6 +552,52 @@ func xp_needed() -> int:
 
 func stages_in_run() -> int:
 	return maxi(1, int(round(float(selected_minutes) * 60.0 / RUN_DURATION)))
+
+
+func class_for_weapon(w: String) -> String:
+	for c in CHAR_CLASSES:
+		if str(c["weapon"]) == w:
+			return str(c["id"])
+	return ""
+
+
+func stage_relic_weapon(stage_idx: int) -> String:
+	if stage_idx < 0 or stage_idx >= STAGES.size():
+		return ""
+	for w in STAGES[stage_idx].get("relics", []):
+		var cid := class_for_weapon(str(w))
+		if cid != "" and not is_class_unlocked(cid):
+			return str(w)
+	return ""
+
+
+func relic_stage_for_class(id: String) -> int:
+	var c := class_by_id(id)
+	if c.is_empty():
+		return -1
+	var w := str(c["weapon"])
+	for i in STAGES.size():
+		if STAGES[i].get("relics", []).has(w):
+			return i
+	return -1
+
+
+func begin_stage_relics(stage_idx: int) -> void:
+	relic_weapon = stage_relic_weapon(stage_idx)
+	relics_found = 0
+
+
+func collect_relic() -> String:
+	# Returns the class id unlocked by this pickup, or "" if more are needed.
+	relics_found += 1
+	if relics_found < RELICS_PER_STAGE or relic_weapon == "":
+		return ""
+	var cid := class_for_weapon(relic_weapon)
+	if cid == "" or is_class_unlocked(cid):
+		return ""
+	unlocked[cid] = 1
+	save_meta()
+	return cid
 
 
 func loadout_has(id: String) -> bool:

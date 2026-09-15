@@ -62,7 +62,7 @@ func _process(_delta: float) -> void:
 				_player.set("hp", 100000.0)
 
 				var cls: Array = _gm.CHAR_CLASSES
-				_check(cls.size() == 4, "4 classes defined")
+				_check(cls.size() == 13, "13 classes defined")
 				var want := [
 					["rogue", 0, 100.0, 1.0, 1.0, 1.0, 1.0, "dagger"],
 					["shadow", 100, 80.0, 0.85, 1.25, 1.0, 1.1, "sdagger"],

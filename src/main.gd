@@ -5,6 +5,7 @@ const PlayerScript := preload("res://src/player.gd")
 const EnemyScript := preload("res://src/enemy.gd")
 const GemScript := preload("res://src/gem.gd")
 const ShardScript := preload("res://src/shard.gd")
+const RelicScript := preload("res://src/relic.gd")
 const ChestScript := preload("res://src/chest.gd")
 const LootScript := preload("res://src/loot_ui.gd")
 const HudScript := preload("res://src/hud.gd")
@@ -185,6 +186,7 @@ func start_run() -> void:
 	_elite_idx = 0
 	intermission = 0.0
 	_apply_stage_theme()
+	_spawn_relics()
 	hud.reset()
 	hud.set_run_visible(true)
 	hud.hide_boss()
@@ -461,6 +463,7 @@ func _advance_stage() -> void:
 	if player:
 		player.heal(99999.0)
 	_apply_stage_theme()
+	_spawn_relics()
 	var sd: Dictionary = gm.stage_data()
 	hud.show_warning("STAGE %d — %s" % [gm.stage + 1, str(sd["name"])])
 	am.play("victory_sting", -6.0)
@@ -632,6 +635,43 @@ const SEP_CELL := 128.0
 const SEP_NEIGHBOURS: Array[Vector2i] = [
 	Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1),
 ]
+
+
+func _spawn_relics() -> void:
+	gm.begin_stage_relics(gm.stage)
+	if gm.relic_weapon == "":
+		return
+	var w: Dictionary = gm.WEAPONS.get(gm.relic_weapon, {})
+	var wname := str(w.get("name", gm.relic_weapon))
+	for i in gm.RELICS_PER_STAGE:
+		var r = RelicScript.new()
+		r.weapon_id = gm.relic_weapon
+		r.tint = gm.stage_data()["boss_aura"]
+		# Well away from the spawn point: these are meant to be searched for.
+		var a := randf() * TAU
+		r.position = Vector2.from_angle(a) * randf_range(620.0, 1380.0)
+		r.collected.connect(_on_relic_collected)
+		run.add_child(r)
+	_announce_relics(wname)
+
+
+func _announce_relics(wname: String) -> void:
+	# Let the stage banner land first, then say what is hidden here.
+	await get_tree().create_timer(2.4).timeout
+	if gm.state == gm.State.RUNNING and hud:
+		hud.show_warning("%s RELICS HIDDEN HERE" % wname.to_upper())
+
+
+func _on_relic_collected() -> void:
+	am.play("shard_pickup", -2.0)
+	jm.add_trauma(0.25)
+	var unlocked_id: String = gm.collect_relic()
+	if unlocked_id != "":
+		am.play("levelup_chime", -4.0)
+		jm.hit_stop(0.08)
+		hud.show_warning("%s UNLOCKED" % str(gm.class_by_id(unlocked_id)["name"]).to_upper())
+	else:
+		hud.show_warning("RELIC %d / %d" % [gm.relics_found, gm.RELICS_PER_STAGE])
 
 
 func _separation() -> void:

@@ -45,6 +45,26 @@ func _process(_delta: float) -> void:
 					var req: String = str(_gm.EVOLUTIONS[id]["passive"])
 					_check(_gm.PASSIVES.has(req), "evo passive valid: " + req)
 				_check(_gm.STAGES.size() == 8, "8 stages defined")
+
+				# Relic unlocks: every class has its own weapon, and the pair
+				# hidden in a stage unlocks whoever wields it.
+				var ws := {}
+				for c in _gm.CHAR_CLASSES:
+					ws[str(c["weapon"])] = true
+				_check(ws.size() == _gm.CHAR_CLASSES.size(), "every class has a unique weapon")
+				_check(_gm.CHAR_CLASSES.size() == _gm.WEAPONS.size(),
+					"one class per weapon")
+
+				_gm.unlocked = {"rogue": 1}
+				_gm.begin_stage_relics(1)
+				_check(_gm.relic_weapon == "sdagger", "stage 2 hides shadow dagger relics")
+				_check(_gm.collect_relic() == "", "one relic is not enough")
+				_check(_gm.collect_relic() == "shadow", "the pair unlocks the Shadowblade")
+				_check(_gm.is_class_unlocked("shadow"), "the unlock sticks")
+				_gm.begin_stage_relics(1)
+				_check(_gm.relic_weapon == "miasma",
+					"a stage moves on once its first relic class is unlocked")
+				_check(not _gm.unlock_class("flame"), "relic classes cannot be bought")
 				for sd in _gm.STAGES:
 					var pool: Array = sd["pool"]
 					_check(pool.size() == 3, "stage pool x3: " + str(sd["name"]))
