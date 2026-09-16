@@ -51,3 +51,6 @@ jobs:
 
       - name: Run test harnesses
         run: GODOT=~/godot/godot ./tools/run_tests.sh
+
+      - name: Check civilian animations and portraits
+        run: ~/godot/godot --headless --path . --script res://test/test_civilians.gd
