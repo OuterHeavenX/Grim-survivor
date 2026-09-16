@@ -197,6 +197,7 @@ func start_run() -> void:
 	hud.reset()
 	hud.set_run_visible(true)
 	hud.hide_boss()
+	am.set_intense(false)
 
 
 func show_title() -> void:
@@ -280,6 +281,7 @@ func _on_upgrade_chosen() -> void:
 
 
 func _on_player_died() -> void:
+	am.set_intense(false)
 	gm.end_run(false)
 
 
@@ -625,6 +627,7 @@ func _spawn_boss() -> void:
 	hud.show_boss(str(sd["boss_name"]))
 	hud.update_boss(e.hp, e.max_hp)
 	hud.show_warning(str(sd["boss_name"]) + " RISES")
+	am.set_intense(true)
 
 
 func _on_enemy_died(e) -> void:
@@ -648,6 +651,7 @@ func _on_enemy_died(e) -> void:
 		gm.boss_alive = false
 		boss = null
 		hud.hide_boss()
+		am.set_intense(false)
 		var aura_c: Color = gm.stage_data()["boss_aura"]
 		jm.add_trauma(0.7)
 		jm.hit_stop(0.08)
