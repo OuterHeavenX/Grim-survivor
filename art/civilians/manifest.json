@@ -1,0 +1,93 @@
+{
+  "generator": "tools/build_civilians.py",
+  "blender": "5.2.1 LTS",
+  "frames": [
+    1,
+    5,
+    9,
+    13,
+    17,
+    21
+  ],
+  "authorship": "Original procedural Blender geometry, no third-party model or texture inputs.",
+  "characters": [
+    {
+      "id": "rogue",
+      "body": "man",
+      "outfit": "shirt and trousers",
+      "height": 78
+    },
+    {
+      "id": "shadow",
+      "body": "woman",
+      "outfit": "cardigan and knee-length skirt",
+      "height": 74
+    },
+    {
+      "id": "pyro",
+      "body": "woman",
+      "outfit": "blouse and knee-length skirt",
+      "height": 76
+    },
+    {
+      "id": "warden",
+      "body": "man",
+      "outfit": "sweater and trousers",
+      "height": 84
+    },
+    {
+      "id": "flame",
+      "body": "man",
+      "outfit": "shirt and trousers",
+      "height": 76
+    },
+    {
+      "id": "rime",
+      "body": "woman",
+      "outfit": "sweater and knee-length skirt",
+      "height": 76
+    },
+    {
+      "id": "dancer",
+      "body": "woman",
+      "outfit": "blouse and knee-length skirt",
+      "height": 74
+    },
+    {
+      "id": "storm",
+      "body": "man",
+      "outfit": "sweater and trousers",
+      "height": 78
+    },
+    {
+      "id": "reaper",
+      "body": "man",
+      "outfit": "shirt and trousers",
+      "height": 80
+    },
+    {
+      "id": "ravenmark",
+      "body": "woman",
+      "outfit": "cardigan and knee-length skirt",
+      "height": 74
+    },
+    {
+      "id": "bonewright",
+      "body": "man",
+      "outfit": "shirt and trousers",
+      "height": 84
+    },
+    {
+      "id": "plague",
+      "body": "woman",
+      "outfit": "blouse and knee-length skirt",
+      "height": 78
+    },
+    {
+      "id": "starcaller",
+      "body": "man",
+      "outfit": "sweater and trousers",
+      "height": 76
+    }
+  ]
+}

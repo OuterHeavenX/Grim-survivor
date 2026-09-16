@@ -11,3 +11,8 @@ mono_crash.*.json
 Thumbs.db
 *~
 *.swp
+
+# Regenerable Blender intermediates and local verification output.
+art/civilians/renders/
+*.blend1
+civilian-*.log

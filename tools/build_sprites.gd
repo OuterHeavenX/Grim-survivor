@@ -16,30 +16,8 @@ extends SceneTree
 const PACKS := "res://assets/packs/"
 const ZOMBIES := PACKS + "top-down-zombies/Zombies/PNG Animations/"
 const BOSSES := PACKS + "topdown-bosses/Monsters/PNG Animations/"
-const SOLDIERS := PACKS + "top-down-soldiers/Characters/PNG_Bodyparts&Animations/PNG Animations/"
-
-# Playable class -> [walk directory, drawn height]. The pack ships two bodies,
-# so the four classes are told apart by the weapon animation each uses. This is
-# placeholder art: the classes are a hooded rogue and a pyromancer, not
-# soldiers. Swapping it is dropping four PNGs in and rerunning this tool.
-const PLAYERS := {
-	"rogue":  [SOLDIERS + "Man/Walk_knife", 78],
-	"shadow": [SOLDIERS + "Girl/Walk_knife", 74],
-	"pyro":   [SOLDIERS + "Girl/Walk_FireThrhrower", 76],
-	"warden": [SOLDIERS + "Man/Walk_bat", 84],
-	# The pack has ten body/weapon walk combinations and thirteen classes, so
-	# three reuse one. They read apart anyway: player.gd tints every sprite by
-	# its class palette.
-	"flame": [SOLDIERS + "Man/Walk_firethrower", 76],
-	"rime": [SOLDIERS + "Girl/Walk_riffle", 76],
-	"dancer": [SOLDIERS + "Girl/Walk_bat", 74],
-	"storm": [SOLDIERS + "Man/Walk_riffle", 78],
-	"reaper": [SOLDIERS + "Man/Walk_bat", 80],
-	"ravenmark": [SOLDIERS + "Girl/Walk_gun", 74],
-	"bonewright": [SOLDIERS + "Man/Walk_gun", 84],
-	"plague": [SOLDIERS + "Girl/Walk_FireThrhrower", 78],
-	"starcaller": [SOLDIERS + "Man/Walk_knife", 76],
-}
+# Player atlases are authored in Blender by build_civilians.py and packed by
+# pack_civilians.py. This enemy-only builder must never overwrite them.
 
 # enemy type -> [character directory, drawn walk height in px]
 # Heights are body_radius * 3.2, matching how large the procedural art read.
@@ -99,20 +77,6 @@ func _build(dir_path: String, names: Array, scale: float) -> Array:
 	return [sheet, frames.size(), fw, fh]
 
 
-func _desaturate(img: Image) -> void:
-	# The soldier art is uniformly olive, so tinting it at runtime just yields
-	# a slightly different olive. Strip the hue here and the class palette in
-	# player.gd becomes the thing that actually colours the survivor. Lifted a
-	# little, since multiplying by a tint only ever darkens.
-	for y in img.get_height():
-		for x in img.get_width():
-			var c := img.get_pixel(x, y)
-			if c.a <= 0.0:
-				continue
-			var l := clampf((0.299 * c.r + 0.587 * c.g + 0.114 * c.b) * 1.25, 0.0, 1.0)
-			img.set_pixel(x, y, Color(l, l, l, c.a))
-
-
 func _emit(sheet: Image, out: String) -> int:
 	sheet.save_png(out)
 	return FileAccess.open(out, FileAccess.READ).get_length()
@@ -158,24 +122,11 @@ func _initialize() -> void:
 		print("%-11s death %2d frames %4dx%-4d %7.1f KB" % ["", death[1], death[2], death[3], bytes / 1024.0])
 
 	var player_counts := {}
-	for cls in PLAYERS:
-		var dir_path: String = PLAYERS[cls][0]
-		var target_h: int = PLAYERS[cls][1]
-		var names := _frames_in(dir_path)
-		if names.is_empty():
-			printerr("no walk frames for class ", cls, " in ", dir_path)
-			continue
-		var probe := Image.load_from_file(dir_path + "/" + names[0])
-		if probe == null:
-			continue
-		var built := _build(dir_path, names, float(target_h) / float(probe.get_height()))
-		if built.is_empty():
-			continue
-		_desaturate(built[0])
-		var b := _emit(built[0], "res://assets/sprites/player_%s_walk.png" % cls)
-		total += b
-		player_counts[cls] = built[1]
-		print("%-11s walk  %2d frames %4dx%-4d %7.1f KB" % ["player:" + cls, built[1], built[2], built[3], b / 1024.0])
+	var manifest_path := "res://assets/sprites/manifest.json"
+	if FileAccess.file_exists(manifest_path):
+		var existing = JSON.parse_string(FileAccess.get_file_as_string(manifest_path))
+		if existing is Dictionary:
+			player_counts = existing.get("players", {})
 
 	var f := FileAccess.open("res://assets/sprites/manifest.json", FileAccess.WRITE)
 	f.store_string(JSON.stringify({"walk": walk_counts, "death": death_counts, "players": player_counts}, "\t"))

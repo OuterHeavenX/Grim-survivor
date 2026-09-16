@@ -35,21 +35,19 @@ var _touch_last_msec := 0
 
 
 const STALE_TOUCH_MSEC := 2500
-# Class walk sheets built by tools/build_sprites.gd. A class missing here, or
+# Civilian walk sheets rendered by tools/build_civilians.py. A class missing here, or
 # whose sheet fails to load, keeps the procedural hooded figure below.
 const WALK_SHEETS := {
 	"rogue": 6, "shadow": 6, "pyro": 6, "warden": 6, "flame": 6, "rime": 6,
 	"dancer": 6, "storm": 6, "reaper": 6, "ravenmark": 6, "bonewright": 6,
 	"plague": 6, "starcaller": 6,
 }
-# How far the class palette pulls the sprite's colour. tools/build_sprites.gd
-# desaturates the player sheets, so this tint is what gives each survivor its
-# colour -- the pack has ten body/weapon combinations for thirteen classes and
-# dresses them all the same.
-const TINT_STRENGTH := 0.9
+# Clothing, skin and hair colours are authored in Blender, not globally tinted.
 const WALK_FPS := 11.0
 
 var _spr: Sprite2D = null
+var _walk_texture: Texture2D
+var _idle_texture: Texture2D
 var _tint := Color(1, 1, 1)
 var _spr_facing := 0.0
 var _anim_t := 0.0
@@ -83,29 +81,20 @@ func _ready() -> void:
 	hp_changed.emit(hp, max_hp)
 
 
-func _class_tint() -> Color:
-	var c: Color = _pal.get("tunic", Color(1, 1, 1))
-	var m := maxf(c.r, maxf(c.g, c.b))
-	if m < 0.01:
-		return Color(1, 1, 1)
-	# Normalise first so a dark palette colours the sprite instead of just
-	# dimming it, then pull back toward white so the art stays readable.
-	var norm := Color(c.r / m, c.g / m, c.b / m)
-	return Color(1, 1, 1).lerp(norm, TINT_STRENGTH)
-
-
 func _make_sprite() -> void:
 	if not WALK_SHEETS.has(class_id):
 		return
 	var tex: Texture2D = load("res://assets/sprites/player_%s_walk.png" % class_id)
 	if tex == null:
 		return
+	_walk_texture = tex
+	_idle_texture = load("res://assets/sprites/player_%s_idle.png" % class_id)
 	_spr = Sprite2D.new()
-	_spr.texture = tex
-	_spr.hframes = int(WALK_SHEETS[class_id])
+	_spr.texture = _idle_texture if _idle_texture != null else _walk_texture
+	_spr.hframes = 1 if _idle_texture != null else int(WALK_SHEETS[class_id])
 	# Behind the node's own _draw(), so the shadow and health bar stay on top.
 	_spr.show_behind_parent = true
-	_tint = _class_tint()
+	_tint = Color.WHITE
 	_spr.modulate = _tint
 	add_child(_spr)
 
@@ -192,9 +181,16 @@ func _physics_process(delta: float) -> void:
 		# Only step the walk cycle while actually moving, so standing still
 		# does not moonwalk on the spot.
 		if velocity.length_squared() > 1.0:
+			_spr.texture = _walk_texture
+			_spr.hframes = int(WALK_SHEETS[class_id])
 			_anim_t += delta
 			_spr_facing = velocity.angle() - PI * 0.5
-		_spr.frame = int(_anim_t * WALK_FPS) % _spr.hframes
+			_spr.frame = int(_anim_t * WALK_FPS) % _spr.hframes
+		else:
+			_anim_t = 0.0
+			_spr.frame = 0
+			_spr.hframes = 1 if _idle_texture != null else int(WALK_SHEETS[class_id])
+			_spr.texture = _idle_texture if _idle_texture != null else _walk_texture
 		_spr.rotation = _spr_facing - rotation
 		var f := clampf(_hurt_flash / 0.12, 0.0, 1.0)
 		_spr.modulate = _tint.lerp(Color(2.4, 1.6, 1.6), f)
