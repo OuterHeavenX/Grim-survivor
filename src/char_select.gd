@@ -14,35 +14,17 @@ var cards := {}
 
 class PortraitIcon:
 	extends Control
-	var pal := {}
+	var portrait: Texture2D
 
-	func _init(p: Dictionary = {}) -> void:
-		pal = p
+	func _init(class_id: String) -> void:
+		portrait = load("res://assets/sprites/player_%s_portrait.png" % class_id)
 		custom_minimum_size = Vector2(96, 96)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _draw() -> void:
-		var c := size * 0.5
-		var cloak: Color = pal.get("cloak", Color(0.07, 0.08, 0.15))
-		var tunic: Color = pal.get("tunic", Color(0.32, 0.18, 0.48))
-		var lining: Color = pal.get("lining", Color(0.55, 0.08, 0.14))
-		var eyes: Color = pal.get("eyes", Color(1.0, 0.25, 0.25))
-
-		draw_colored_polygon([
-			c + Vector2(-34, 18), c + Vector2(34, 18),
-			c + Vector2(42, 48), c + Vector2(-42, 48),
-		], tunic)
-		draw_colored_polygon([
-			c + Vector2(-34, 18), c + Vector2(34, 18),
-			c + Vector2(40, 42), c + Vector2(-40, 42),
-		], cloak)
-
-		draw_circle(c + Vector2(0, -8), 30.0, lining)
-		draw_circle(c + Vector2(0, -14), 26.0, cloak.darkened(0.55))
-
-		draw_circle(c + Vector2(0, -6), 15.0, Color(0.015, 0.015, 0.025))
-		draw_circle(c + Vector2(-7, -8), 3.4, eyes)
-		draw_circle(c + Vector2(7, -8), 3.4, eyes)
+		if portrait != null:
+			var edge := minf(size.x, size.y)
+			draw_texture_rect(portrait, Rect2((size - Vector2.ONE * edge) * 0.5, Vector2.ONE * edge), false)
 
 
 func _ready() -> void:
@@ -143,7 +125,7 @@ func _class_card(c: Dictionary) -> Dictionary:
 	hb.add_theme_constant_override("separation", 14)
 	panel.add_child(hb)
 
-	var portrait := PortraitIcon.new(c["palette"])
+	var portrait := PortraitIcon.new(id)
 	hb.add_child(portrait)
 
 	var info := VBoxContainer.new()

@@ -15,6 +15,7 @@
 *.pck         binary
 *.wav         binary
 *.png         binary
+*.blend       binary
 build/web/**  linguist-generated=true
 
 # Asset packs live in Git LFS. Keep this below the `* text=auto` rule above:

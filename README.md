@@ -7,6 +7,10 @@ Eight stages, five minutes each, any of them selectable from the title screen.
 A run is 5, 10, 15, 20 or 30 minutes -- that many five-minute stages, each
 ending in a boss -- and finishing the last one is the victory.
 
+Playable characters use original Blender civilian models: seven men in casual
+clothes and six women in skirts, rendered as animated top-down sprites with
+matching selection portraits. See [the roster and rebuild guide](art/civilians/README.md).
+
 Thirteen playable survivors, one per weapon, so no two start the same way. Four
 are bought with soul shards; the other nine are found — each stage hides a pair
 of relics for one weapon, and collecting both unlocks whoever wields it. Any
