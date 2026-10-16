@@ -1,14 +1,40 @@
-# Civilian character roster
+# Survivor character roster
 
-Original Blender characters replace all 13 soldier-based playable sprites.
-Seven men wear casual shirts/sweaters, trousers and sneakers. Six women wear
-blouses/cardigans/sweaters, knee-length skirts and sneakers. Hairstyles, skin
-tones and clothing colours vary across the roster. No military equipment is
-modelled. Class IDs, abilities, unlocks and balance are unchanged.
+Original Blender characters for all 13 playable classes: haunted survivors of
+a dark-fantasy apocalypse. Seven are men and six are women, as before. Each
+costume is built to read as its class from both the top-down sprite and the
+selection portrait, using muted ash, leather, iron and bone palettes with
+exactly one accent colour per class. There are no modern clothes, sneakers,
+guns or military kit. Class IDs, abilities, unlocks and balance are unchanged.
+
+| id | survivor | costume | accent |
+|----|----------|---------|--------|
+| rogue | Hooded Rogue | ash-brown peaked hood, capelet and long travelling cloak, leather jerkin, belt pouches | blood red lining |
+| shadow | Shadowblade | close black wrapped hood, scarf over the lower face, dark wraps | cold steel-blue bindings, faintly lit eyes |
+| pyro | Pyromancer | soot-black hooded robe, singed hem and mantle | smouldering ember-orange trim and cuffs |
+| warden | Iron Warden | tarnished iron breastplate, layered pauldrons, gauntlets, greaves, wool mantle, grey beard | tarnished brass trim |
+| flame | Flamecaller | burnt-red tabard over soot leathers, high scorched collar | flame-gold burning hands and collar |
+| rime | Rimewarden | pale frosted fur hood and mantle, slate-blue leathers and robe | ice-cyan crystal shards and clasp |
+| dancer | Bladedancer | grey fighting wraps, ragged short skirt, twin blades crossed on the back | faded jade sash and hilts |
+| storm | Stormbound | storm-grey long coat and high collar, copper lightning rods | crackling blue-white bracers and eyes |
+| reaper | The Reaper | deep black cowl over a gaunt face, ragged ankle-length robe, tattered mantle | ghost-green eyes |
+| ravenmark | Ravenmark | layered black feather mantle and raven-feather crest, long open robe | bruised plum-violet lining and band |
+| bonewright | Bonewright | stained leather apron, hide pauldrons, crown of tusks, rib-bone chest guard, belt skull | bone |
+| plague | Plaguebearer | wide-brimmed hat, leather beaked mask, long waxed coat | bile-green lenses and vials |
+| starcaller | Starcaller | tall pointed indigo-black hood and robe | pale-gold star motes and lit eyes |
+
+Hoods, cloaks, mantles, robes, plate, feathers and bone pieces are modelled
+geometry weighted to the same armature as the body (head, spine, hips, limb
+bones), so the shared walk cycle drives the whole costume. Cloaks open at the
+sides and robes flare wide enough that swinging arms and legs stay clear.
+Renders use a strong warm key, a weak cool fill and two cold rim lights over a
+dark ambient so silhouettes stand out against the dark ground. Faces have a
+heavier brow ridge, sunken sockets and smaller eyes; hoods shade the eyes.
 
 - `civilian_roster.blend`: editable meshes, materials, 13 named character
   collections and weighted armatures. Characters are spaced along X for editing.
 - `civilian_roster.png`: full-roster review sheet.
+- `roster_portraits.png`: all 13 selection portraits side by side.
 - `manifest.json`: class/body/outfit mapping and render provenance.
 - `*_in_game.png`: captures from the actual Godot renderer.
 - `../../assets/sprites/player_*`: shipped walk sheets, idle poses and portraits.
@@ -26,7 +52,8 @@ godot --headless --path . --export-release Web
 ```
 
 Use `-- --preview` after the Blender command to render only the first two
-characters for an art review. Run the full command before packing the roster.
+characters for an art review, or `-- --preview --only rogue,reaper` to pick
+classes. Preview runs do not overwrite the .blend or manifest. Run the full command before packing the roster.
 Raw renders are reproducible intermediates and are ignored by Git.
 
 The Blender action has a neutral pose at frame 0 and a 24-frame looping walk
@@ -38,10 +65,10 @@ controller. All frames share one camera origin and scale, including idle. Packin
 uses one padded bounding square across the entire cycle, so transparent margins
 do not shrink the character and individual frames never shift or resize.
 
-Skin and clothing colours are baked into the PNGs and use white modulation;
+Skin, costume and accent colours (including emissive embers and eyes) are baked into the PNGs and use white modulation;
 the existing red damage flash still applies. Selection portraits are rendered
 from the same character models. `tools/build_sprites.gd` now rebuilds enemies
-only, so it cannot restore the soldier placeholders over the civilian art.
+only, so it cannot restore the soldier placeholders over the survivor art.
 
 Run `godot --path . --script res://test/capture_civilians.gd` without headless
 mode to regenerate selection and gameplay screenshots. The character test

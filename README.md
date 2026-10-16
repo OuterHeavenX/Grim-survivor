@@ -15,9 +15,10 @@ Each has a scheduled event before its boss, and each boss has its own
 multi-phase attack set. A fallen boss leaves a relic altar: rule-changing
 relics weighted towards that stage's theme. Rotgrove keeps its original form.
 
-Playable characters use original Blender civilian models: seven men in casual
-clothes and six women in skirts, rendered as animated top-down sprites with
-matching selection portraits. See [the roster and rebuild guide](art/civilians/README.md).
+Playable characters use original Blender models of grim dark-fantasy
+survivors (hoods, cloaks, tarnished plate, feathers, bone, furs and masks, one
+accent colour per class), rendered as animated top-down sprites with matching
+selection portraits. See [the roster and rebuild guide](art/civilians/README.md).
 
 Thirteen playable survivors, one per weapon, so no two start the same way. Four
 are bought with soul shards; the other nine are found — each stage hides a pair
