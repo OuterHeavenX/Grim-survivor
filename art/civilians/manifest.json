@@ -1,6 +1,6 @@
 {
   "generator": "tools/build_civilians.py",
-  "blender": "5.2.1 LTS",
+  "blender": "5.2.2 LTS",
   "frames": [
     1,
     5,
@@ -10,83 +10,110 @@
     21
   ],
   "authorship": "Original procedural Blender geometry, no third-party model or texture inputs.",
+  "style": "Grim dark-fantasy survivors: muted ash, leather, iron and bone palettes with one accent colour per class.",
   "characters": [
     {
       "id": "rogue",
       "body": "man",
-      "outfit": "shirt and trousers",
+      "outfit": "deep hood, travelling cloak",
+      "look": "Ash-brown peaked hood and long travelling cloak lined in blood red, leather jerkin, belt pouches.",
+      "accent": "#8E1D25",
       "height": 78
     },
     {
       "id": "shadow",
       "body": "woman",
-      "outfit": "cardigan and knee-length skirt",
+      "outfit": "wrapped hood, face scarf",
+      "look": "Close black wrapped hood and scarf over the lower face, cold steel-blue bindings, faintly lit eyes.",
+      "accent": "#5A7DAF",
       "height": 74
     },
     {
       "id": "pyro",
       "body": "woman",
-      "outfit": "blouse and knee-length skirt",
+      "outfit": "scorched robe, ember trim",
+      "look": "Soot-black hooded robe, singed hem, cuffs and hood rim smouldering ember orange.",
+      "accent": "#E2601A",
       "height": 76
     },
     {
       "id": "warden",
       "body": "man",
-      "outfit": "sweater and trousers",
+      "outfit": "iron plate, pauldrons, mantle",
+      "look": "Tarnished iron breastplate, heavy layered pauldrons, gauntlets and greaves, brass trim, dark wool mantle, grey beard.",
+      "accent": "#A8843C",
       "height": 84
     },
     {
       "id": "flame",
       "body": "man",
-      "outfit": "shirt and trousers",
+      "outfit": "burnt tabard, burning hands",
+      "look": "Burnt-red tabard over soot leathers, high scorched collar, flame-gold glowing hands and collar trim.",
+      "accent": "#F2A23A",
       "height": 76
     },
     {
       "id": "rime",
       "body": "woman",
-      "outfit": "sweater and knee-length skirt",
+      "outfit": "frost furs, fur hood",
+      "look": "Pale frosted fur hood and mantle over slate-blue leathers, ice-cyan crystal shards at clasp and shoulders.",
+      "accent": "#9FD8E8",
       "height": 76
     },
     {
       "id": "dancer",
       "body": "woman",
-      "outfit": "blouse and knee-length skirt",
+      "outfit": "blade wraps, jade sash",
+      "look": "Grey fighting wraps, faded jade sash with long tails, twin sheathed blades crossed on the back.",
+      "accent": "#4E8C7E",
       "height": 74
     },
     {
       "id": "storm",
       "body": "man",
-      "outfit": "sweater and trousers",
+      "outfit": "storm coat, lightning rods",
+      "look": "Storm-grey long coat with a high collar, copper lightning rods on the back, crackling blue-white bracers and eyes.",
+      "accent": "#6F9BFF",
       "height": 78
     },
     {
       "id": "reaper",
       "body": "man",
-      "outfit": "shirt and trousers",
+      "outfit": "black cowl, ragged robe",
+      "look": "Deep black cowl hiding a gaunt face, ragged ankle-length robe and tattered mantle, ghost-green eyes.",
+      "accent": "#8FE0A8",
       "height": 80
     },
     {
       "id": "ravenmark",
       "body": "woman",
-      "outfit": "cardigan and knee-length skirt",
+      "outfit": "feathered mantle, raven crest",
+      "look": "Layered black feather mantle and raven-feather crest, long open robe with a bruised plum-violet lining.",
+      "accent": "#6A4483",
       "height": 74
     },
     {
       "id": "bonewright",
       "body": "man",
-      "outfit": "shirt and trousers",
+      "outfit": "leathers, bone crown, ribs",
+      "look": "Stained leather apron and pauldrons studded with bone, crown of tusks, rib-bone chest guard and belt skull.",
+      "accent": "#D8CBA8",
       "height": 84
     },
     {
       "id": "plague",
       "body": "woman",
-      "outfit": "blouse and knee-length skirt",
+      "outfit": "beaked mask, long coat",
+      "look": "Wide-brimmed hat, leather beaked mask with bile-green glass lenses, long waxed coat over dark layers.",
+      "accent": "#A3BE3C",
       "height": 78
     },
     {
       "id": "starcaller",
       "body": "man",
-      "outfit": "sweater and trousers",
+      "outfit": "pointed hood, star robe",
+      "look": "Tall pointed indigo-black hood and robe scattered with pale-gold star motes, softly lit eyes.",
+      "accent": "#E9C86A",
       "height": 76
     }
   ]
