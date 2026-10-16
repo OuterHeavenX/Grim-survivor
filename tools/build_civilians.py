@@ -23,6 +23,8 @@ OUT = ROOT / "art" / "civilians"
 RAW = OUT / "renders"
 ARGS = sys.argv[sys.argv.index("--")+1:] if "--" in sys.argv else []
 PREVIEW = "--preview" in ARGS
+# Re-render only the selection portraits (the title altar shows them large).
+PORTRAITS = "--portraits" in ARGS
 ONLY = None
 if "--only" in ARGS:
     ONLY = ARGS[ARGS.index("--only")+1].split(",")
@@ -802,7 +804,7 @@ def setup(char, portrait=False, hero=False):
     camera.rotation_euler=(target-camera.location).to_track_quat("-Z","Y").to_euler()
     camera.data.ortho_scale=2.05 if not portrait else 1.25
     if hero: camera.data.ortho_scale=2.45
-    res=256 if not (portrait or hero) else (256 if portrait else 640)
+    res=256 if not (portrait or hero) else (512 if portrait else 640)
     scene.render.resolution_x=res; scene.render.resolution_y=res
     for ob,loc in lights:
         ob.location=loc+Vector((x,0,0))
@@ -817,15 +819,18 @@ for i,char in enumerate(characters):
     if ONLY and char["id"] not in ONLY: continue
     if PREVIEW and not ONLY and i>1: break
     d=RAW/char["id"]; d.mkdir(exist_ok=True)
-    setup(char,hero=True); scene.frame_set(0); render(d/"hero.png")
     setup(char,portrait=True); scene.frame_set(0); render(d/"portrait.png")
+    if PORTRAITS:
+        print("PORTRAIT COMPLETE",char["id"],flush=True)
+        continue
+    setup(char,hero=True); scene.frame_set(0); render(d/"hero.png")
     setup(char); scene.frame_set(0); render(d/"idle.png")
     for frame in ([5] if PREVIEW else [1,5,9,13,17,21]):
         scene.frame_set(frame); render(d/("walk_%02d.png"%frame))
     print("SURVIVOR COMPLETE",char["id"],flush=True)
     done+=1
 
-if PREVIEW or ONLY:
+if PREVIEW or ONLY or PORTRAITS:
     sys.exit(0)
 for c in characters: c["collection"].hide_render=False
 scene.frame_set(0)

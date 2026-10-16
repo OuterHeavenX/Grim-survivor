@@ -1,7 +1,7 @@
 extends Node
 # Visual probe, not a test: captures the title altar, the opening seconds of a
 # run and the end screen to /tmp/gs_flow_*.png. Run with a display:
-#   godot --path . (with this script autoloaded) -- see tools/run_tests.sh
+#   add Probe="*res://test/shot_flow.gd" under [autoload], run without --headless
 
 var _main = null
 var _gm = null

@@ -44,9 +44,10 @@ for i,row in enumerate(rows):
     assert len(set(frames))==6,ident+" walk animation has repeated poses"
     sheet.save(DEST/("player_%s_walk.png"%ident))
     idle.crop(crop).resize((size,size),Image.Resampling.LANCZOS).save(DEST/("player_%s_idle.png"%ident))
-    portrait=Image.open(raw/"portrait.png").resize((192,192),Image.Resampling.LANCZOS)
+    # 384 px: the title altar shows the portrait large, the list scales it down.
+    portrait=Image.open(raw/"portrait.png").resize((384,384),Image.Resampling.LANCZOS)
     portrait.save(DEST/("player_%s_portrait.png"%ident))
-    portraits.append((ident,portrait.convert("RGBA")))
+    portraits.append((ident,portrait.convert("RGBA").resize((192,192),Image.Resampling.LANCZOS)))
     x=24+(i%5)*276; y=122+(i//5)*340
     draw.rounded_rectangle((x,y,x+260,y+323),12,fill="#222226")
     hero=Image.open(raw/"hero.png").convert("RGBA").resize((252,252),Image.Resampling.LANCZOS)
