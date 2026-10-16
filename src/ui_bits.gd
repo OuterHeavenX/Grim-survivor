@@ -40,19 +40,26 @@ class PipsRow:
 
 	func _init(p_total: int = 5) -> void:
 		total = p_total
-		custom_minimum_size = Vector2(total * 30.0, 30.0)
+		custom_minimum_size = Vector2(total * _step(), 30.0)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _step() -> float:
+		return 30.0 if total <= 5 else 21.0
 
 	func set_rank(r: int) -> void:
 		rank = r
 		queue_redraw()
 
 	func _draw() -> void:
+		var st := _step()
+		var rad := 10.0 if total <= 5 else 7.5
 		for i in total:
-			var cp := Vector2(15.0 + i * 30.0, 15.0)
+			var cp := Vector2(st * 0.5 + i * st, 15.0)
+			# Ranks past the fifth are ascended: gold, not violet.
+			var hi := Color(1.0, 0.8, 0.35) if i >= 5 else Color(0.78, 0.5, 1.0)
 			if i < rank:
-				draw_circle(cp, 10.0, Color(0.55, 0.3, 0.9, 0.35))
-				draw_circle(cp, 6.5, Color(0.78, 0.5, 1.0))
-				draw_arc(cp, 10.0, 0.0, TAU, 24, Color(0.9, 0.78, 1.0), 2.0)
+				draw_circle(cp, rad, Color(hi, 0.35))
+				draw_circle(cp, rad * 0.65, hi)
+				draw_arc(cp, rad, 0.0, TAU, 24, hi.lightened(0.4), 2.0)
 			else:
-				draw_arc(cp, 10.0, 0.0, TAU, 24, Color(0.5, 0.35, 0.65, 0.7), 2.0)
+				draw_arc(cp, rad, 0.0, TAU, 24, Color(hi.darkened(0.3), 0.7), 2.0)

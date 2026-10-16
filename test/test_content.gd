@@ -60,7 +60,7 @@ func _catalog() -> void:
 	_check(c.characters.size() == 13, "13 characters as resources")
 	_check(c.stages.size() == 8, "8 stages as resources")
 	_check(c.relics.size() >= 14 and c.relics.size() <= 21, "14-21 relics, got %d" % c.relics.size())
-	_check(c.meta_upgrades.size() == 6, "6 meta upgrades as resources")
+	_check(c.meta_upgrades.size() == 14, "14 meta upgrades as resources")
 	for id in ["cultist_healer", "necromancer", "shield_bearer", "ranged_cultist", "burrower",
 			"banner_carrier", "xp_leech", "mimic"]:
 		var e := c.enemy(id)
@@ -185,7 +185,7 @@ func _adapters() -> void:
 	_check(E.TYPES.has("skeleton") and is_equal_approx(float(E.TYPES["skeleton"]["hp"]), 22.0),
 		"enemy TYPES built from EnemyData")
 	_check(E.TYPES.size() == c.enemies.size(), "every EnemyData appears in TYPES")
-	_check(_gm.META_TRACKS.size() == 6 and is_equal_approx(float(_gm.META_BONUS["edge"]), 6.0),
+	_check(_gm.META_TRACKS.size() == 14 and is_equal_approx(float(_gm.META_BONUS["edge"]), 6.0),
 		"meta tracks adapter")
 
 

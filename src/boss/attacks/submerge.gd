@@ -13,8 +13,8 @@ var _ripples: Array = []
 
 
 static func valid_spot(m, p: Vector2, player_pos: Vector2, min_player: float) -> bool:
-	var a: float = m.ARENA - ARENA_MARGIN
-	if absf(p.x) > a or absf(p.y) > a:
+	var a: Vector2 = m.arena_half() - Vector2(ARENA_MARGIN, ARENA_MARGIN)
+	if absf(p.x) > a.x or absf(p.y) > a.y:
 		return false
 	if p.distance_to(player_pos) < min_player:
 		return false

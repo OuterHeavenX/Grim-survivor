@@ -16,4 +16,4 @@ extends Resource
 
 func to_legacy_dictionary() -> Dictionary:
 	return {"id": String(id), "name": display_name, "desc": description,
-		"costs": Array(costs), "fmt": fmt, "short": short_fmt}
+		"costs": Array(costs), "fmt": fmt, "short": short_fmt, "max": max_rank, "hook": hook}

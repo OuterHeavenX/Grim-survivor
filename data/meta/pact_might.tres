@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MetaUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/meta_upgrade_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"pact_might"
+display_name = "Pact of Might"
+description = "+12% companion damage per rank."
+costs = PackedInt32Array(30, 60, 100, 150, 220, 300, 400, 520, 660, 820)
+per_rank = 12.0
+fmt = "+%d%% companion damage"
+short_fmt = "+%d%%"
+max_rank = 10
+hook = "companion_damage"

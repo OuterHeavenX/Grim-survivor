@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MetaUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/meta_upgrade_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"pact_vigil"
+display_name = "Long Vigil"
+description = "+1 second companion duration per rank."
+costs = PackedInt32Array(30, 60, 100, 150, 220, 300, 400, 520, 660, 820)
+per_rank = 1.0
+fmt = "+%d s companion time"
+short_fmt = "+%ds"
+max_rank = 10
+hook = "companion_duration"

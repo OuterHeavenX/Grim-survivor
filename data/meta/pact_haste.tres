@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MetaUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/meta_upgrade_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"pact_haste"
+display_name = "Swift Pact"
+description = "-5% companion cooldown per rank."
+costs = PackedInt32Array(40, 80, 140, 220, 320, 440, 580, 760)
+per_rank = 5.0
+fmt = "-%d%% companion cooldown"
+short_fmt = "-%d%%"
+max_rank = 8
+hook = "companion_cooldown"

@@ -2,6 +2,58 @@ extends CanvasLayer
 
 
 signal pause_pressed
+signal summon_pressed
+
+
+# The companion sigil: a round button that fills clockwise as the summon
+# recharges and pulses when it is ready. Tap/click it, or press Space.
+class SummonButton:
+	extends Control
+	signal pressed
+	var frac := 0.0
+	var charged := false
+	var active := 0.0
+	var color := Color(0.5, 1.0, 0.7)
+	var portrait: Texture2D
+	var label := ""
+	var _t := 0.0
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(124, 124)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+
+	func _gui_input(event: InputEvent) -> void:
+		if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT) \
+				or (event is InputEventScreenTouch and event.pressed):
+			pressed.emit()
+			accept_event()
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.5 - 6.0
+		var pulse := 0.5 + 0.5 * sin(_t * 5.0)
+		if charged:
+			draw_circle(c, r + 6.0 + 4.0 * pulse, Color(color, 0.18 + 0.15 * pulse))
+		draw_circle(c, r, Color(0.03, 0.03, 0.05, 0.88))
+		if portrait:
+			var pr := r * 0.86
+			draw_texture_rect(portrait, Rect2(c - Vector2(pr, pr), Vector2(pr, pr) * 2.0), false,
+				Color(1, 1, 1, 1.0 if charged else 0.45))
+		else:
+			draw_circle(c, r * 0.35, Color(color, 0.8 if charged else 0.3))
+		draw_arc(c, r, 0, TAU, 48, Color(0.15, 0.15, 0.2), 6.0)
+		draw_arc(c, r, -PI * 0.5, -PI * 0.5 + TAU * frac, 48, Color(color, 1.0 if charged else 0.75), 6.0)
+		if active > 0.0:
+			draw_arc(c, r + 9.0, -PI * 0.5, -PI * 0.5 + TAU * active, 48, Color(1, 1, 1, 0.8), 3.0)
+		var f := ThemeDB.fallback_font
+		var fs := 20
+		var w := f.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x
+		draw_string_outline(f, Vector2(c.x - w * 0.5, size.y + 20.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 6, Color.BLACK)
+		draw_string(f, Vector2(c.x - w * 0.5, size.y + 20.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(color.lightened(0.3), 1.0) if charged else Color(0.75, 0.75, 0.8))
 
 const JoystickScript := preload("res://src/joystick_ui.gd")
 const IndicatorScript := preload("res://src/offscreen_indicators.gd")
@@ -32,6 +84,7 @@ var indicators: Control
 var _heart_t := 0.0
 var lowhp: TextureRect
 var am = null
+var summon_btn: SummonButton
 var xp_glow: ColorRect
 var hp_text: Label
 var hint_label: Label
@@ -242,6 +295,15 @@ func _ready() -> void:
 	indicators = IndicatorScript.new()
 	add_child(indicators)
 
+	summon_btn = SummonButton.new()
+	summon_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	summon_btn.offset_left = -150
+	summon_btn.offset_right = -26
+	summon_btn.offset_top = -230
+	summon_btn.offset_bottom = -106
+	summon_btn.pressed.connect(func () -> void: summon_pressed.emit())
+	add_child(summon_btn)
+
 	joy = JoystickScript.new()
 	add_child(joy)
 
@@ -320,6 +382,7 @@ func reset() -> void:
 	boss_bar.visible = false
 	boss_label.visible = false
 	warn_label.modulate.a = 0.0
+	_warn_t = 0.0
 	lowhp.modulate.a = 0.0
 	_heart_t = 0.0
 	_card_t = 0.0
@@ -428,6 +491,7 @@ func _process(delta: float) -> void:
 	timer_label.text = "%d:%02d" % [int(t) / 60, int(t) % 60]
 	kills_label.text = "%d slain" % gm.kills
 	shard_label.text = "%d" % gm.run_shards
+	_tick_summon()
 	if player == null or not is_instance_valid(player):
 		player = get_tree().get_first_node_in_group("player")
 	if player:
@@ -438,6 +502,28 @@ func _process(delta: float) -> void:
 		_tick_lowhp(delta, hp / maxf(mhp, 1.0), bool(player.get("alive")))
 	else:
 		lowhp.modulate.a = 0.0
+
+
+func _tick_summon() -> void:
+	var main = get_tree().get_first_node_in_group("main")
+	var ab = main.get("summon") if main else null
+	summon_btn.visible = ab != null and is_instance_valid(ab)
+	if not summon_btn.visible:
+		return
+	var kind: String = gm.selected_companion
+	summon_btn.color = gm.COMPANIONS[kind]["color"]
+	if summon_btn.portrait == null or summon_btn.get_meta("kind", "") != kind:
+		summon_btn.set_meta("kind", kind)
+		var path := "res://assets/sprites/companion_%s_portrait.png" % kind
+		summon_btn.portrait = load(path) if ResourceLoader.exists(path) else null
+	summon_btn.frac = ab.frac_ready()
+	summon_btn.charged = ab.is_ready()
+	var alive := get_tree().get_nodes_in_group("companions")
+	var left := 0.0
+	for c in alive:
+		left = maxf(left, float(c.life) / maxf(float(c.max_life), 0.01))
+	summon_btn.active = left
+	summon_btn.label = "SUMMON" if ab.is_ready() else "%ds" % int(ceil(ab.cooldown_left))
 
 
 func _tick_hint(delta: float) -> void:

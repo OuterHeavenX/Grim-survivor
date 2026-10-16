@@ -133,8 +133,7 @@ func clear_stage_hazards() -> void:
 
 
 func clamp_arena(v: Vector2, margin := 40.0) -> Vector2:
-	var a: float = main.ARENA - margin
-	return Vector2(clampf(v.x, -a, a), clampf(v.y, -a, a))
+	return main.clamp_arena(v, margin)
 
 
 func ring_point(center: Vector2, rmin: float, rmax: float) -> Vector2:

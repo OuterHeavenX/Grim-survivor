@@ -55,7 +55,37 @@ const ACHIEVEMENTS := [
 		"kind": "upgrades", "goal": 10, "reward": 90, "sigil": ""},
 	{"id": "crowned", "name": "ASHEN SOVEREIGN", "desc": "Conquer the campaign.",
 		"kind": "crown", "goal": 1, "reward": 200, "sigil": "crown"},
+	{"id": "pactbound", "name": "PACTBOUND", "desc": "Summon a companion 25 times.",
+		"kind": "summons", "goal": 25, "reward": 60, "sigil": "spectral"},
+	{"id": "oathkeeper", "name": "OATHKEEPER", "desc": "Complete 10 stage missions.",
+		"kind": "missions", "goal": 10, "reward": 120, "sigil": ""},
+	{"id": "thief_taker", "name": "THIEF-TAKER", "desc": "Catch 3 Soul Thieves.",
+		"kind": "thieves", "goal": 3, "reward": 80, "sigil": "gilded"},
+	{"id": "surge_breaker", "name": "SURGE BREAKER", "desc": "Outlast 15 horde surges.",
+		"kind": "surges", "goal": 15, "reward": 90, "sigil": ""},
+	{"id": "ascendant", "name": "ASCENDANT", "desc": "Buy 40 permanent upgrade ranks.",
+		"kind": "upgrades", "goal": 40, "reward": 250, "sigil": "ascendant"},
+	{"id": "legion", "name": "LEGION OF ONE", "desc": "Slay 10,000 foes across all runs.",
+		"kind": "kills", "goal": 10000, "reward": 300, "sigil": ""},
 ]
+
+# Companions answer the survivor's summon for a few seconds. The Grave Hound
+# is everyone's from the start; the rest are bought or earned. Numbers here are
+# rank-0 values: Pact tracks and the in-run Pact upgrade scale them.
+const COMPANIONS := {
+	"hound": {"name": "GRAVE HOUND", "desc": "Fast melee hunter. Lunges between foes and savages them.",
+		"color": Color(0.49, 1.0, 0.69), "unlock": "free", "cost": 0, "achievement": ""},
+	"archer": {"name": "BONE ARCHER", "desc": "Holds back and looses piercing arrows at the nearest foes.",
+		"color": Color(0.56, 0.85, 1.0), "unlock": "shards", "cost": 150, "achievement": ""},
+	"wisp": {"name": "EMBER WISP", "desc": "Orbits you, burning everything close in pulses of soulfire.",
+		"color": Color(1.0, 0.6, 0.25), "unlock": "achievement", "cost": 0, "achievement": "oathkeeper"},
+	"knight": {"name": "WRAITH KNIGHT", "desc": "A slow giant. Draws the horde onto itself and cleaves it.",
+		"color": Color(0.75, 0.55, 1.0), "unlock": "achievement", "cost": 0, "achievement": "first_victory"},
+}
+const COMPANION_ORDER := ["hound", "archer", "wisp", "knight"]
+const BASE_COMPANION_DURATION := 8.0
+const BASE_COMPANION_COOLDOWN := 30.0
+const PACT_MAX := 5
 
 const SIGILS := {
 	"ashen": {"name": "ASHEN", "color": Color(0.42, 0.46, 0.56), "achievement": ""},
@@ -63,6 +93,9 @@ const SIGILS := {
 	"gold": {"name": "VICTOR", "color": Color(1.0, 0.78, 0.28), "achievement": "first_victory"},
 	"violet": {"name": "RELICBOUND", "color": Color(0.72, 0.32, 1.0), "achievement": "collector"},
 	"crown": {"name": "CROWNED", "color": Color(0.95, 0.86, 0.55), "achievement": "crowned"},
+	"spectral": {"name": "SPECTRAL", "color": Color(0.45, 1.0, 0.75), "achievement": "pactbound"},
+	"gilded": {"name": "GILDED", "color": Color(1.0, 0.72, 0.2), "achievement": "thief_taker"},
+	"ascendant": {"name": "ASCENDANT", "color": Color(0.85, 0.95, 1.0), "achievement": "ascendant"},
 }
 
 var shards := 0
@@ -124,6 +157,10 @@ var forced_seed := -1
 # The Daily Rite: one stage and one seed per calendar day, the same for
 # everyone, five minutes long. It never touches campaign progress.
 var daily := false
+# Half extents of the current stage's playable area. Most stages are the
+# original 3000 x 3000 square; layouts can make them long, wide or narrow.
+const DEFAULT_ARENA := Vector2(1500.0, 1500.0)
+var arena_half := DEFAULT_ARENA
 var daily_best := {"date": "", "time": 0.0, "kills": 0}
 var run_stats: RunStats = RunStats.new()
 var mods: GameModifiers = GameModifiers.new()
@@ -135,6 +172,15 @@ var campaign_crowned := false
 var lifetime_kills := 0
 var lifetime_runs := 0
 var lifetime_wins := 0
+var lifetime_missions := 0
+var lifetime_summons := 0
+var lifetime_thieves := 0
+var lifetime_surges := 0
+var companions_unlocked := {"hound": true}
+var selected_companion := "hound"
+# In-run Pact upgrade level (0..PACT_MAX) and level-up rerolls left.
+var pact_level := 0
+var rerolls_left := 0
 var achievements := {}
 var selected_sigil := "ashen"
 
@@ -201,6 +247,10 @@ func achievement_value(kind: String) -> int:
 				total += meta_rank(str(t["id"]))
 			return total
 		"crown": return 1 if campaign_crowned else 0
+		"missions": return lifetime_missions
+		"summons": return lifetime_summons
+		"thieves": return lifetime_thieves
+		"surges": return lifetime_surges
 	return 0
 
 
@@ -254,31 +304,107 @@ func next_achievement() -> Dictionary:
 	return {}
 
 
+func _track_value_text(t: Dictionary, v: float) -> String:
+	var f := str(t["fmt"])
+	return f % (int(round(v)) if f.contains("%d") else v)
+
+
 func track_bonus_text(track_id: String) -> String:
 	var t := track_by_id(track_id)
 	var per: float = META_BONUS[track_id]
-	var cur := int(round(per * float(meta_rank(track_id))))
-	return t["fmt"] % cur
+	return _track_value_text(t, per * float(meta_rank(track_id)))
 
 
 func track_next_text(track_id: String) -> String:
 	var t := track_by_id(track_id)
 	var per: float = META_BONUS[track_id]
-	var nxt := int(round(per * float(meta_rank(track_id) + 1)))
-	return t["fmt"] % nxt
+	return _track_value_text(t, per * float(meta_rank(track_id) + 1))
+
+
+func track_max(track_id: String) -> int:
+	return int(track_by_id(track_id).get("max", 5))
+
+
+# --- companions ------------------------------------------------------------
+
+func is_companion_unlocked(id: String) -> bool:
+	if not COMPANIONS.has(id):
+		return false
+	if bool(companions_unlocked.get(id, false)):
+		return true
+	var c: Dictionary = COMPANIONS[id]
+	match str(c["unlock"]):
+		"free":
+			return true
+		"achievement":
+			return bool(achievements.get(str(c["achievement"]), false))
+	return false
+
+
+func companion_unlock_text(id: String) -> String:
+	var c: Dictionary = COMPANIONS[id]
+	match str(c["unlock"]):
+		"shards":
+			return "%d soul shards" % int(c["cost"])
+		"achievement":
+			for a in ACHIEVEMENTS:
+				if str(a["id"]) == str(c["achievement"]):
+					return "Earn %s: %s" % [a["name"], a["desc"]]
+	return ""
+
+
+func unlock_companion(id: String) -> bool:
+	if is_companion_unlocked(id) or not COMPANIONS.has(id):
+		return false
+	var c: Dictionary = COMPANIONS[id]
+	if str(c["unlock"]) != "shards" or shards < int(c["cost"]):
+		return false
+	shards -= int(c["cost"])
+	companions_unlocked[id] = true
+	save_meta()
+	progression_changed.emit()
+	return true
+
+
+func select_companion(id: String) -> bool:
+	if not is_companion_unlocked(id):
+		return false
+	selected_companion = id
+	save_meta()
+	return true
+
+
+func companion_damage_mult() -> float:
+	# Tracks the run's power too, so a companion summoned at level 30 still
+	# matters: survivor damage, Pact of Might, the in-run Pact and the level.
+	return (1.0 + 0.12 * float(meta_rank("pact_might"))) * (1.0 + 0.25 * float(pact_level)) \
+		* meta_damage_mult() * mods.mult("damage") * (1.0 + 0.03 * float(level - 1))
+
+
+func companion_duration() -> float:
+	return BASE_COMPANION_DURATION + float(meta_rank("pact_vigil")) + 1.5 * float(pact_level)
+
+
+func companion_cooldown() -> float:
+	return BASE_COMPANION_COOLDOWN * (1.0 - 0.05 * float(meta_rank("pact_haste"))) * (1.0 - 0.07 * float(pact_level))
+
+
+# At full Pact the summon answers twice over.
+func companion_count() -> int:
+	return 2 if pact_level >= PACT_MAX else 1
 
 func track_short_text(track_id: String) -> String:
 	var t := track_by_id(track_id)
 	var per: float = META_BONUS[track_id]
-	var cur := int(round(per * float(meta_rank(track_id))))
-	return t["short"] % cur
+	var v := per * float(meta_rank(track_id))
+	return str(t["short"]) % (int(round(v)) if str(t["short"]).contains("%d") else v)
 
 
 func track_short_next_text(track_id: String) -> String:
 	var t := track_by_id(track_id)
 	var per: float = META_BONUS[track_id]
-	var nxt := int(round(per * float(meta_rank(track_id) + 1)))
-	return t["short"] % nxt
+	var v := per * float(meta_rank(track_id) + 1)
+	return str(t["short"]) % (int(round(v)) if str(t["short"]).contains("%d") else v)
 
 
 
@@ -471,10 +597,25 @@ func add_shards(v: int) -> void:
 
 
 func bank_run_shards() -> void:
+	run_shards += int(round(float(run_shards) * 0.10 * float(meta_rank("tithe"))))
 	last_banked = run_shards
 	shards += run_shards
 	run_shards = 0
 	save_meta()
+
+
+# Permanent tracks that act through the run modifier system. Re-applied at
+# every run start because the run clears all modifier sources.
+func _apply_meta_mods() -> void:
+	var m := {}
+	if meta_rank("bulwark") > 0:
+		m["damage_taken"] = 1.0 - 0.03 * float(meta_rank("bulwark"))
+	if meta_rank("haste") > 0:
+		m["cooldown"] = 1.0 - 0.03 * float(meta_rank("haste"))
+	if meta_rank("renewal") > 0:
+		m["regen"] = 0.3 * float(meta_rank("renewal"))
+	if not m.is_empty():
+		mods.set_mods("meta", m)
 
 
 func consume_revive() -> bool:
@@ -600,6 +741,9 @@ func reset_run() -> void:
 	boss_alive = false
 	run_shards = 0
 	revives_left = meta_revives()
+	pact_level = 0
+	rerolls_left = meta_rank("fate")
+	_apply_meta_mods()
 	state = State.RUNNING
 	run_started.emit()
 
@@ -762,6 +906,8 @@ func roll_upgrades(count := 3) -> Array:
 		var lvl := int(passives.get(id, 0))
 		if lvl < int(PASSIVES[id]["max"]):
 			pool.append({"kind": "passive", "id": id, "to": lvl + 1, "is_new": lvl == 0})
+	if pact_level < PACT_MAX:
+		pool.append({"kind": "pact", "id": "pact", "to": pact_level + 1, "is_new": pact_level == 0})
 	pool.shuffle()
 	var out := evos.slice(0, 2)
 	out.append_array(pool.slice(0, maxi(count - out.size(), 0)))
@@ -773,6 +919,8 @@ func apply_upgrade(choice: Dictionary) -> void:
 		evolved[choice["id"]] = true
 	elif choice["kind"] == "weapon":
 		weapons[choice["id"]] = choice["to"]
+	elif choice["kind"] == "pact":
+		pact_level = clampi(int(choice["to"]), 0, PACT_MAX)
 	else:
 		passives[choice["id"]] = choice["to"]
 		if choice["id"] == "vitality":
@@ -813,7 +961,7 @@ func load_meta() -> void:
 		shards = int(cfg.get_value("meta", "shards", 0))
 		for t in META_TRACKS:
 			var id: String = t["id"]
-			meta[id] = clampi(int(cfg.get_value("meta", "rank_" + id, 0)), 0, 5)
+			meta[id] = clampi(int(cfg.get_value("meta", "rank_" + id, 0)), 0, int(t.get("max", 5)))
 
 		unlocked = {"rogue": 1}
 		for c in CHAR_CLASSES:
@@ -827,6 +975,14 @@ func load_meta() -> void:
 		lifetime_kills = maxi(0, int(cfg.get_value("progress", "lifetime_kills", cfg.get_value("best", "kills", 0))))
 		lifetime_runs = maxi(0, int(cfg.get_value("progress", "lifetime_runs", 0)))
 		lifetime_wins = maxi(0, int(cfg.get_value("progress", "lifetime_wins", cfg.get_value("best", "wins", 0))))
+		lifetime_missions = maxi(0, int(cfg.get_value("progress", "lifetime_missions", 0)))
+		lifetime_summons = maxi(0, int(cfg.get_value("progress", "lifetime_summons", 0)))
+		lifetime_thieves = maxi(0, int(cfg.get_value("progress", "lifetime_thieves", 0)))
+		lifetime_surges = maxi(0, int(cfg.get_value("progress", "lifetime_surges", 0)))
+		companions_unlocked = {"hound": true}
+		for cid in COMPANIONS:
+			if int(cfg.get_value("companions", "owned_" + cid, 0)) > 0:
+				companions_unlocked[cid] = true
 		achievements = {}
 		for a in ACHIEVEMENTS:
 			var aid := str(a["id"])
@@ -840,6 +996,8 @@ func load_meta() -> void:
 			var r := item as RelicData
 			if r and int(cfg.get_value("relics", "found_" + String(r.id), 0)) > 0:
 				relics_discovered[String(r.id)] = true
+		var csel := str(cfg.get_value("companions", "selected", "hound"))
+		selected_companion = csel if is_companion_unlocked(csel) else "hound"
 		var sel := str(cfg.get_value("meta", "char_selected", "rogue"))
 		selected_class = sel if is_class_unlocked(sel) else "rogue"
 		_load_loadout(cfg)
@@ -855,6 +1013,12 @@ func load_meta() -> void:
 		lifetime_kills = 0
 		lifetime_runs = 0
 		lifetime_wins = 0
+		lifetime_missions = 0
+		lifetime_summons = 0
+		lifetime_thieves = 0
+		lifetime_surges = 0
+		companions_unlocked = {"hound": true}
+		selected_companion = "hound"
 		achievements = {}
 		selected_sigil = "ashen"
 
@@ -879,6 +1043,13 @@ func save_meta() -> void:
 	cfg.set_value("progress", "lifetime_runs", lifetime_runs)
 	cfg.set_value("progress", "lifetime_wins", lifetime_wins)
 	cfg.set_value("progress", "selected_sigil", selected_sigil)
+	cfg.set_value("progress", "lifetime_missions", lifetime_missions)
+	cfg.set_value("progress", "lifetime_summons", lifetime_summons)
+	cfg.set_value("progress", "lifetime_thieves", lifetime_thieves)
+	cfg.set_value("progress", "lifetime_surges", lifetime_surges)
+	for cid in companions_unlocked:
+		cfg.set_value("companions", "owned_" + String(cid), 1)
+	cfg.set_value("companions", "selected", selected_companion)
 	for a in ACHIEVEMENTS:
 		var aid := str(a["id"])
 		cfg.set_value("achievements", aid, 1 if bool(achievements.get(aid, false)) else 0)

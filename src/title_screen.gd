@@ -4,6 +4,7 @@ signal start_pressed
 signal daily_pressed
 signal survivors_pressed
 signal weapons_pressed
+signal pacts_pressed
 signal upgrades_pressed
 signal unlocks_pressed
 signal settings_pressed
@@ -291,8 +292,8 @@ func _ready() -> void:
 	daily_btn=_button("",220,64,16,_on_daily); daily_btn.add_theme_color_override("font_color",Color(0.95,0.55,0.4)); row.add_child(daily_btn)
 	next_label=_label("",18,Color(0.62,0.55,0.72)); root_page.add_child(next_label)
 	var nav:=HBoxContainer.new(); nav.alignment=BoxContainer.ALIGNMENT_CENTER; nav.add_theme_constant_override("separation",8); root_page.add_child(nav)
-	for item in [["SURVIVORS",func(): survivors_pressed.emit()],["ARMOURY",func(): weapons_pressed.emit()],["UPGRADES",func(): upgrades_pressed.emit()],["UNLOCKS",func(): unlocks_pressed.emit()]]:
-		nav.add_child(_button(item[0],154,72,17,item[1]))
+	for item in [["SURVIVORS",func(): survivors_pressed.emit()],["ARMOURY",func(): weapons_pressed.emit()],["PACTS",func(): pacts_pressed.emit()],["UPGRADES",func(): upgrades_pressed.emit()],["UNLOCKS",func(): unlocks_pressed.emit()]]:
+		nav.add_child(_button(item[0],124,72,15,item[1]))
 	best_label=_label("",17,Color(0.48,0.5,0.58)); root_page.add_child(best_label)
 	play_page=VBoxContainer.new(); play_page.visible=false; play_page.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	play_page.alignment=BoxContainer.ALIGNMENT_CENTER; play_page.add_theme_constant_override("separation",14); shell.add_child(play_page)

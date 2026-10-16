@@ -162,8 +162,14 @@ func _ready() -> void:
 	queue_redraw()
 
 
+func _half() -> Vector2:
+	var gm = get_node_or_null("/root/GameManager")
+	return gm.arena_half if gm else Vector2(ARENA, ARENA)
+
+
 func _draw() -> void:
-	var e := ARENA + 120.0
+	var half := _half()
+	var e := maxf(half.x, half.y) + 120.0
 
 	draw_rect(Rect2(-e, -e, e * 2.0, e * 2.0), theme["base"])
 
@@ -251,11 +257,34 @@ func _draw() -> void:
 
 	_draw_decor(e)
 
-	draw_rect(Rect2(-ARENA, -ARENA, ARENA * 2.0, ARENA * 2.0), Color(theme["border"], 0.55), false, 6.0)
-	var steps := 48
+	# Beyond the stage's bounds the ground falls away into a dark drop, so a
+	# long road or a narrow hall reads as its own shape, not a cropped square.
+	var far := e + 1400.0
+	var void_c := Color(0.0, 0.0, 0.01, 0.82)
+	draw_rect(Rect2(-far, -far, far * 2.0, far - half.y), void_c)
+	draw_rect(Rect2(-far, half.y, far * 2.0, far - half.y), void_c)
+	draw_rect(Rect2(-far, -half.y, far - half.x, half.y * 2.0), void_c)
+	draw_rect(Rect2(half.x, -half.y, far - half.x, half.y * 2.0), void_c)
+	for k in 4:
+		var w := 26.0 + 22.0 * float(k)
+		var a := 0.16 - 0.035 * float(k)
+		draw_rect(Rect2(-half.x - w * 0.5, -half.y - w * 0.5, half.x * 2.0 + w, half.y * 2.0 + w), Color(0, 0, 0, a), false, w)
+	draw_rect(Rect2(-half.x, -half.y, half.x * 2.0, half.y * 2.0), Color(theme["border"], 0.7), false, 6.0)
+	# Broken stones along the rim.
+	var per := Vector2(half.x * 2.0, half.y * 2.0)
+	var total := (per.x + per.y) * 2.0
+	var steps := int(total / 110.0)
 	for i in steps:
-		var t := TAU * float(i) / float(steps)
-		var p := Vector2(cos(t), sin(t)) * ARENA
-		var s := 7.0 + 3.0 * sin(t * 7.0)
+		var d := total * float(i) / float(steps)
+		var p: Vector2
+		if d < per.x:
+			p = Vector2(-half.x + d, -half.y)
+		elif d < per.x + per.y:
+			p = Vector2(half.x, -half.y + d - per.x)
+		elif d < per.x * 2.0 + per.y:
+			p = Vector2(half.x - (d - per.x - per.y), half.y)
+		else:
+			p = Vector2(-half.x, half.y - (d - per.x * 2.0 - per.y))
+		var s := 7.0 + 3.0 * sin(float(i) * 1.7)
 		draw_circle(p, s, theme["stone"])
 		draw_circle(p + Vector2(-2, -2), s * 0.5, Color(theme["stone"]).lightened(0.4))

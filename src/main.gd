@@ -16,6 +16,7 @@ const EndScript := preload("res://src/end_screen.gd")
 const PauseScript := preload("res://src/pause_menu.gd")
 const UpgradesScript := preload("res://src/upgrades_ui.gd")
 const WeaponsScript := preload("res://src/weapons_ui.gd")
+const PactsScript := preload("res://src/pacts_ui.gd")
 const BgScript := preload("res://src/bg.gd")
 const GroundScript := preload("res://src/ground.gd")
 const FogScript := preload("res://src/fog.gd")
@@ -28,7 +29,7 @@ const AltarScript := preload("res://src/relics/relic_altar.gd")
 const SettingsScript := preload("res://src/settings_ui.gd")
 const UnlockablesScript := preload("res://src/unlockables_ui.gd")
 
-const MAX_ENEMIES := 70
+const MAX_ENEMIES := 90
 # A hard ceiling for drifted-away pickups, in case a kill storm outruns the
 # lifetime fade. Oldest go first.
 const MAX_PICKUPS := 140
@@ -55,6 +56,7 @@ var end_screen = null
 var pause_menu = null
 var upgrades_ui = null
 var weapons_ui = null
+var pacts_ui = null
 var fog_a: Node2D
 var fog_b: Node2D
 var ground: Node2D
@@ -65,6 +67,7 @@ var combat: CombatRules = null
 var relics: RelicManager = null
 # Per-stage: freed and rebuilt on every stage transition.
 var director: StageDirector = null
+var summon: SummonAbility = null
 # Recent deaths a necromancer may raise, oldest first: {pos, t, used}.
 var _corpses: Array = []
 const MAX_CORPSES := 16
@@ -96,6 +99,9 @@ func _ready() -> void:
 	add_child(bg_layer)
 
 	ground = GroundScript.new()
+	# Bottom of the world: stage ruins, objective zones and scars (all drawn at
+	# small negative z) must sit on top of it, not under it.
+	ground.z_index = -10
 	add_child(ground)
 
 	fog_a = FogScript.new()
@@ -174,6 +180,11 @@ func _ready() -> void:
 	add_child(weapons_ui)
 	weapons_ui.closed.connect(_on_weapons_closed)
 
+	pacts_ui = PactsScript.new()
+	add_child(pacts_ui)
+	pacts_ui.closed.connect(_on_pacts_closed)
+	title_screen.pacts_pressed.connect(_on_pacts_open)
+
 	unlockables_ui = UnlockablesScript.new()
 	add_child(unlockables_ui)
 	unlockables_ui.closed.connect(_on_unlockables_closed)
@@ -186,6 +197,9 @@ func _ready() -> void:
 	_apply_effect_settings()
 
 	hud.pause_pressed.connect(_on_pause_button)
+	hud.summon_pressed.connect(func () -> void:
+		if summon and is_instance_valid(summon):
+			summon.try_summon())
 	hud.set_run_visible(false)
 
 	gm.level_changed.connect(_on_level_changed)
@@ -205,6 +219,7 @@ func _teardown_run() -> void:
 	if director and is_instance_valid(director):
 		director.cleanup()
 	director = null
+	summon = null
 	combat = null
 	relics = null
 	_corpses.clear()
@@ -241,6 +256,9 @@ func start_run() -> void:
 	player.died.connect(_on_player_died)
 	run.add_child(player)
 	player.joy_ui = hud.joy
+	summon = SummonAbility.new()
+	summon.setup(self)
+	run.add_child(summon)
 	spawn_timer = 0.8
 	warned = false
 	_elite_idx = 0
@@ -306,6 +324,7 @@ func show_title() -> void:
 	settings_ui.hide_screen()
 	upgrades_ui.hide_screen()
 	weapons_ui.hide_screen()
+	pacts_ui.hide_screen()
 	unlockables_ui.hide_screen()
 	title_screen.show_screen()
 
@@ -327,6 +346,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_on_unlockables_closed()
 			elif upgrades_ui.visible:
 				_on_upgrades_closed()
+			elif pacts_ui.visible:
+				_on_pacts_closed()
 			elif weapons_ui.visible:
 				_on_weapons_closed()
 			elif gm.state == gm.State.RUNNING:
@@ -630,6 +651,18 @@ func _on_weapons_open() -> void:
 	weapons_ui.show_screen()
 
 
+func _on_pacts_open() -> void:
+	am.play("ui_click", -8.0)
+	title_screen.hide_screen()
+	pacts_ui.show_screen()
+
+
+func _on_pacts_closed() -> void:
+	am.play("ui_click", -8.0)
+	pacts_ui.hide_screen()
+	title_screen.show_screen()
+
+
 func _on_unlockables_open() -> void:
 	am.play("ui_click", -8.0)
 	title_screen.hide_screen()
@@ -658,6 +691,7 @@ func _on_upgrades_closed() -> void:
 
 func _apply_stage_theme() -> void:
 	var sd: Dictionary = gm.stage_data()
+	gm.arena_half = StageLayout.half_for(String(gm.stage_def().id)) if gm.stage_def() else gm.DEFAULT_ARENA
 	if ground and ground.has_method("set_theme"):
 		ground.call("set_theme", str(sd["theme"]))
 	var stage_def: StageData = gm.stage_def()
@@ -759,7 +793,9 @@ func _spawner(delta: float) -> void:
 	if spawn_timer > 0.0:
 		return
 	var t: float = gm.run_time
-	spawn_timer = lerpf(1.1, 0.28, clampf(t / 300.0, 0.0, 1.0))
+	spawn_timer = lerpf(0.95, 0.24, clampf(t / 300.0, 0.0, 1.0))
+	if director and is_instance_valid(director) and director.missions and director.missions.is_surging():
+		spawn_timer *= 0.45
 	if _enemy_count() >= MAX_ENEMIES:
 		return
 	var pool: Array = gm.stage_data()["pool"]
@@ -773,9 +809,7 @@ func _ring_pos() -> Vector2:
 	var ang := randf() * TAU
 	var dist := randf_range(760.0, 950.0)
 	var p: Vector2 = player.position + Vector2.from_angle(ang) * dist
-	p.x = clampf(p.x, -ARENA, ARENA)
-	p.y = clampf(p.y, -ARENA, ARENA)
-	return p
+	return clamp_arena(p)
 
 
 func _enemy_count() -> int:
@@ -790,9 +824,13 @@ func count_alive(etype: String) -> int:
 	return n
 
 
+func arena_half() -> Vector2:
+	return gm.arena_half
+
+
 func clamp_arena(v: Vector2, margin := 0.0) -> Vector2:
-	var a := ARENA - margin
-	return Vector2(clampf(v.x, -a, a), clampf(v.y, -a, a))
+	var a: Vector2 = gm.arena_half - Vector2(margin, margin)
+	return Vector2(clampf(v.x, -a.x, a.x), clampf(v.y, -a.y, a.y))
 
 
 func add_hazard_node(h: Node2D) -> Node2D:
@@ -878,7 +916,7 @@ func spawn_split(etype: String, pos: Vector2, hp_val: float, dmg_val: float):
 	# stronger than the elite that died to make it.
 	if _enemy_count() >= MAX_ENEMIES:
 		return null
-	var p := Vector2(clampf(pos.x, -ARENA, ARENA), clampf(pos.y, -ARENA, ARENA))
+	var p := clamp_arena(pos)
 	var e = EnemyScript.new()
 	e.setup(etype, p, 1.0, 1.0)
 	e.max_hp = maxf(1.0, hp_val)
@@ -895,9 +933,7 @@ func summon_minions(pos: Vector2) -> void:
 		if _enemy_count() >= MAX_ENEMIES:
 			return
 		var p := pos + Vector2.from_angle(randf() * TAU) * randf_range(80.0, 160.0)
-		p.x = clampf(p.x, -ARENA, ARENA)
-		p.y = clampf(p.y, -ARENA, ARENA)
-		_spawn_enemy("skeleton", p)
+		_spawn_enemy("skeleton", clamp_arena(p))
 
 
 func _spawn_boss() -> void:

@@ -77,8 +77,9 @@ func _dist_to_player() -> float:
 
 func _step_bolt(delta: float) -> void:
 	position += vel * delta
-	position.x = clampf(position.x, -ARENA, ARENA)
-	position.y = clampf(position.y, -ARENA, ARENA)
+	var half: Vector2 = get_node("/root/GameManager").arena_half
+	position.x = clampf(position.x, -half.x, half.x)
+	position.y = clampf(position.y, -half.y, half.y)
 	if _dist_to_player() < radius + 14.0:
 		player.take_damage(damage, source)
 		if jm:

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MetaUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/meta_upgrade_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"renewal"
+display_name = "Grave Renewal"
+description = "+0.3 HP regenerated per second per rank."
+costs = PackedInt32Array(50, 100, 170, 260, 380, 540)
+per_rank = 0.3
+fmt = "+%.1f HP/s"
+short_fmt = "+%.1f/s"
+max_rank = 6
+hook = "regen"

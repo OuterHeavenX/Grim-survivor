@@ -9,6 +9,11 @@ var am = null
 
 var balance_label: Label
 var rows := {}
+const SECTIONS := [
+	["POWER", ["edge", "haste", "scholar", "greed", "tithe", "fate"]],
+	["SURVIVAL", ["vitality", "bulwark", "renewal", "boots", "wind"]],
+	["PACT", ["pact_might", "pact_vigil", "pact_haste"]],
+]
 
 
 func _ready() -> void:
@@ -33,7 +38,6 @@ func _ready() -> void:
 
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 10)
-	vb.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(vb)
 
 	vb.add_child(_label("SOUL UPGRADES", 50, Color(0.85, 0.6, 1.0)))
@@ -58,11 +62,30 @@ func _ready() -> void:
 	var sep := HSeparator.new()
 	vb.add_child(sep)
 
+	# Many tracks now: a scrolling list in three sections.
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vb.add_child(scroll)
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 8)
+	scroll.add_child(list)
+	for section in SECTIONS:
+		list.add_child(_label(section[0], 24, Color(1.0, 0.8, 0.45)))
+		for id in section[1]:
+			var t: Dictionary = gm.track_by_id(id)
+			if t.is_empty():
+				continue
+			var row := _track_row(t)
+			rows[id] = row["refs"]
+			list.add_child(row["node"])
+	# Anything not placed in a section still shows, at the end.
 	for t in gm.META_TRACKS:
-		var id: String = t["id"]
-		var row := _track_row(t)
-		rows[id] = row["refs"]
-		vb.add_child(row["node"])
+		if not rows.has(str(t["id"])):
+			var row := _track_row(t)
+			rows[str(t["id"])] = row["refs"]
+			list.add_child(row["node"])
 
 	var sep2 := HSeparator.new()
 	vb.add_child(sep2)
@@ -103,7 +126,7 @@ func _track_row(t: Dictionary) -> Dictionary:
 	name_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(name_l)
-	var pips := UIBits.PipsRow.new()
+	var pips := UIBits.PipsRow.new(int(t.get("max", 5)))
 	top.add_child(pips)
 
 	var desc := _label(t["desc"], 20, Color(0.55, 0.6, 0.72))

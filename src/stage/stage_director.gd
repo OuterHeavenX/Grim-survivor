@@ -14,6 +14,11 @@ extends Node2D
 #   and return to title (main.gd calls it before freeing the run).
 
 const VeilScript := preload("res://src/stage/visibility_veil.gd")
+const LayoutScript := preload("res://src/stage/stage_layout.gd")
+const MissionScript := preload("res://src/missions/mission_director.gd")
+# Static ruins are bucketed on a grid, so a horde of 300 checks only the few
+# walls near each body; rule obstacles (few, and some move) stay a list.
+const GRID := 256.0
 
 signal event_fired(id: String)
 
@@ -28,6 +33,10 @@ var veil: Node2D
 var intensity := -1
 var boss_phase := false
 var obstacles: Array = []   # [{pos, radius, to?}] capsules/circles actors cannot enter
+var layout: Node2D = null
+var missions: MissionDirector = null
+var static_obstacles: Array = []
+var _grid := {}
 
 var _fired := {}
 var _spawn_next := {}
@@ -45,6 +54,13 @@ func setup(p_main, idx: int) -> void:
 	z_index = -3
 	veil = VeilScript.new()
 	add_child(veil)
+	if stage_data:
+		layout = LayoutScript.new()
+		var stone: Color = main.ground.get("theme").get("stone", Color(0.2, 0.22, 0.28)) if main.get("ground") else Color(0.2, 0.22, 0.28)
+		add_child(layout)
+		layout.setup(String(stage_data.id), stone)
+		for o in layout.obstacles():
+			_add_static(o)
 	var rd: StageRuleData = stage_data.rule_data() if stage_data else null
 	if rd != null and rd.impl != null:
 		rule = rd.impl.new()
@@ -56,6 +72,9 @@ func setup(p_main, idx: int) -> void:
 		rule.name = "Rule"
 		add_child(rule)
 		rule.setup()
+	missions = MissionScript.new()
+	missions.setup(main, seed_value)
+	add_child(missions)
 	for item in (stage_data.special_enemies if stage_data else []):
 		var sp := item as StageSpawnData
 		if sp:
@@ -88,6 +107,8 @@ func tick(delta: float) -> void:
 				fire_event(ev)
 	if rule:
 		rule.tick(delta, t)
+	if missions:
+		missions.tick(delta, t)
 	_special_spawns(t)
 
 
@@ -120,6 +141,8 @@ func has_fired(id: String) -> bool:
 
 func on_boss(boss) -> void:
 	boss_phase = true
+	if missions:
+		missions.on_boss()
 	if rule:
 		rule.on_boss(boss)
 
@@ -131,6 +154,8 @@ func emit_element(kind: String, pos: Vector2, radius: float, source: String) -> 
 
 
 func on_enemy_died(e) -> void:
+	if missions and not _cleaned:
+		missions.on_enemy_died(e)
 	if rule and not _cleaned:
 		rule.on_enemy_died(e)
 
@@ -161,22 +186,52 @@ func remove_obstacle(o: Dictionary) -> void:
 	obstacles.erase(o)
 
 
+func has_obstacles() -> bool:
+	return not obstacles.is_empty() or not static_obstacles.is_empty()
+
+
+func _add_static(o: Dictionary) -> void:
+	var idx := static_obstacles.size()
+	static_obstacles.append(o)
+	var a: Vector2 = o["pos"]
+	var b: Vector2 = o.get("to", a)
+	# Pad by the largest body we expect to resolve (bosses are ~60).
+	var pad: float = float(o["radius"]) + 70.0
+	var lo := Vector2(minf(a.x, b.x) - pad, minf(a.y, b.y) - pad)
+	var hi := Vector2(maxf(a.x, b.x) + pad, maxf(a.y, b.y) + pad)
+	for gx in range(floori(lo.x / GRID), floori(hi.x / GRID) + 1):
+		for gy in range(floori(lo.y / GRID), floori(hi.y / GRID) + 1):
+			var key := Vector2i(gx, gy)
+			if not _grid.has(key):
+				_grid[key] = []
+			_grid[key].append(idx)
+
+
 func resolve(pos: Vector2, radius: float) -> Vector2:
-	# Push a body out of every obstacle it overlaps. Cheap enough for the
-	# player and a horde because stages field a handful of obstacles.
+	# Push a body out of every obstacle it overlaps: the static ruins in its
+	# grid cell, then the stage rule's own few obstacles.
 	var p := pos
+	if not static_obstacles.is_empty():
+		var cell: Array = _grid.get(Vector2i(floori(p.x / GRID), floori(p.y / GRID)), [])
+		for i in cell:
+			p = _push_out(p, radius, static_obstacles[i])
 	for o in obstacles:
-		var r: float = float(o["radius"]) + radius
-		var closest: Vector2 = o["pos"]
-		if o.has("to"):
-			var a: Vector2 = o["pos"]
-			var ab: Vector2 = o["to"] - a
-			var tt := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 0.001), 0.0, 1.0)
-			closest = a + ab * tt
-		var d := p - closest
-		var dl := d.length()
-		if dl < r:
-			p = closest + (d / dl if dl > 0.01 else Vector2.RIGHT) * r
+		p = _push_out(p, radius, o)
+	return p
+
+
+func _push_out(p: Vector2, radius: float, o: Dictionary) -> Vector2:
+	var r: float = float(o["radius"]) + radius
+	var closest: Vector2 = o["pos"]
+	if o.has("to"):
+		var a: Vector2 = o["pos"]
+		var ab: Vector2 = o["to"] - a
+		var tt := clampf((p - a).dot(ab) / maxf(ab.length_squared(), 0.001), 0.0, 1.0)
+		closest = a + ab * tt
+	var d := p - closest
+	var dl := d.length()
+	if dl < r:
+		return closest + (d / dl if dl > 0.01 else Vector2.RIGHT) * r
 	return p
 
 
@@ -190,9 +245,13 @@ func cleanup() -> void:
 	if _cleaned:
 		return
 	_cleaned = true
+	if missions:
+		missions.cleanup()
 	if rule:
 		rule.cleanup()
 	obstacles.clear()
+	static_obstacles.clear()
+	_grid.clear()
 	for g in ["stage_hazards", "stage_objects", "objectives"]:
 		for n in get_tree().get_nodes_in_group(g):
 			n.remove_from_group(g)
@@ -211,6 +270,8 @@ func debug_state() -> Dictionary:
 	}
 	if rule:
 		d["rule"] = rule.debug_state()
+	if missions:
+		d["missions"] = missions.debug_state()
 	return d
 
 

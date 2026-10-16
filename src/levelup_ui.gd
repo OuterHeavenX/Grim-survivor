@@ -6,6 +6,7 @@ signal choice_made
 var gm = null
 var panel: VBoxContainer
 var buttons: Array = []
+var reroll_btn: Button
 
 
 func _ready() -> void:
@@ -40,6 +41,14 @@ func _ready() -> void:
 	panel.add_theme_constant_override("separation", 16)
 	vb.add_child(panel)
 
+	reroll_btn = Button.new()
+	reroll_btn.custom_minimum_size = Vector2(300, 64)
+	reroll_btn.add_theme_font_size_override("font_size", 22)
+	reroll_btn.pressed.connect(_on_reroll)
+	var rc := CenterContainer.new()
+	rc.add_child(reroll_btn)
+	vb.add_child(rc)
+
 
 func show_screen(choices: Array) -> void:
 	for c in panel.get_children():
@@ -54,6 +63,8 @@ func show_screen(choices: Array) -> void:
 		_style_card(b, _accent(ch))
 		panel.add_child(b)
 		buttons.append(b)
+	reroll_btn.visible = int(gm.rerolls_left) > 0
+	reroll_btn.text = "REROLL  (%d left)" % int(gm.rerolls_left)
 	visible = true
 	# Cards deal in one after another rather than appearing as a block.
 	for i in buttons.size():
@@ -75,6 +86,8 @@ func _accent(ch: Dictionary) -> Color:
 			return Color(1.0, 0.8, 0.3)
 		"weapon":
 			return Color(1.0, 0.5, 0.25)
+		"pact":
+			return Color(0.45, 1.0, 0.75)
 	return Color(0.7, 0.5, 1.0)
 
 
@@ -105,6 +118,12 @@ func _btn_text(ch: Dictionary) -> String:
 		tag = "EVOLVE!"
 		bname = str(ev["name"])
 		desc = str(ev["desc"])
+	elif ch["kind"] == "pact":
+		var cname: String = str(gm.COMPANIONS[gm.selected_companion]["name"])
+		bname = "PACT: " + cname
+		tag = "Lv %d/%d" % [int(ch["to"]), gm.PACT_MAX]
+		desc = "Your summon answers twice over." if int(ch["to"]) >= gm.PACT_MAX \
+			else "Companion +25% damage, +1.5s, -7% cooldown."
 	elif ch["kind"] == "weapon":
 		var w: Dictionary = gm.WEAPONS[ch["id"]]
 		bname = str(w["name"])
@@ -114,6 +133,16 @@ func _btn_text(ch: Dictionary) -> String:
 		bname = str(p["name"])
 		desc = str(p["desc"])
 	return "%s   ·   %s\n%s" % [bname.to_upper(), tag, desc]
+
+
+func _on_reroll() -> void:
+	if int(gm.rerolls_left) <= 0:
+		return
+	gm.rerolls_left -= 1
+	var am = get_node_or_null("/root/AudioMan")
+	if am:
+		am.play("ui_click", -6.0)
+	show_screen(gm.roll_upgrades())
 
 
 func _on_pick(ch: Dictionary) -> void:

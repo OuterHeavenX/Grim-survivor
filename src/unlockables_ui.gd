@@ -6,7 +6,7 @@ var gm = null
 var am = null
 var stats_label: Label
 var challenge_list: VBoxContainer
-var sigil_row: HBoxContainer
+var sigil_row: GridContainer
 
 
 func _ready() -> void:
@@ -42,10 +42,14 @@ func _ready() -> void:
 	scroll.add_child(challenge_list)
 
 	root.add_child(_label("DISPLAY SIGIL", 24, Color(0.95, 0.72, 0.32)))
-	sigil_row = HBoxContainer.new()
-	sigil_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	sigil_row.add_theme_constant_override("separation", 8)
-	root.add_child(sigil_row)
+	# Four to a row: there are more sigils than fit across a phone.
+	sigil_row = GridContainer.new()
+	sigil_row.columns = 4
+	sigil_row.add_theme_constant_override("h_separation", 8)
+	sigil_row.add_theme_constant_override("v_separation", 8)
+	var sc := CenterContainer.new()
+	sc.add_child(sigil_row)
+	root.add_child(sc)
 
 	var back := Button.new()
 	back.text = "BACK TO ALTAR"
@@ -85,7 +89,7 @@ func _rebuild() -> void:
 		var b := Button.new()
 		var unlocked: bool = gm.sigil_unlocked(str(id))
 		b.text = str(data["name"]) if unlocked else "LOCKED"
-		b.custom_minimum_size = Vector2(130, 60)
+		b.custom_minimum_size = Vector2(150, 56)
 		b.disabled = not unlocked
 		b.add_theme_font_size_override("font_size", 18)
 		b.add_theme_color_override("font_color", data["color"])

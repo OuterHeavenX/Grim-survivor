@@ -59,6 +59,11 @@ var jm = null
 var _flash := 0.0
 var _tick := 0.0
 var _kb := Vector2.ZERO
+var _steer := Vector2.ZERO
+var _steer_t := 0.0
+# Set while a companion taunts this enemy: it walks at the lure instead of
+# the player.
+var lure: Node2D = null
 var _anim := 0.0
 var _dash_t := 1.0
 var _dash_phase := 0
@@ -251,7 +256,13 @@ func _physics_process(delta: float) -> void:
 		player = get_tree().get_first_node_in_group("player")
 		if player == null:
 			return
-	var to_p: Vector2 = player.global_position - global_position
+	var target_pos: Vector2 = player.global_position
+	if lure != null:
+		if is_instance_valid(lure) and not lure.is_queued_for_deletion():
+			target_pos = lure.global_position
+		else:
+			lure = null
+	var to_p: Vector2 = target_pos - global_position
 	var dist := to_p.length()
 	var dir := to_p / dist if dist > 1.0 else Vector2.ZERO
 	var spd := speed * slow_mult * env_speed * _rally_speed
@@ -273,6 +284,9 @@ func _physics_process(delta: float) -> void:
 			if _dash_t <= 0.0:
 				_dash_phase = 0
 				_dash_t = randf_range(0.8, 1.4)
+	if _steer_t > 0.0:
+		_steer_t -= delta
+		dir = (dir * 0.25 + _steer).normalized() * dir.length()
 	velocity = dir * spd + _kb + push
 	push = Vector2.ZERO
 	# A charging boss is carried by _kb, so it must not be damped like a
@@ -280,8 +294,21 @@ func _physics_process(delta: float) -> void:
 	var damp := 380.0 if (is_boss() and _cast_phase == 0 and _kb.length() > 300.0) else 900.0
 	_kb = _kb.move_toward(Vector2.ZERO, damp * delta)
 	move_and_slide()
-	if main and main.director and is_instance_valid(main.director) and not main.director.obstacles.is_empty():
+	if main and main.director and is_instance_valid(main.director) and main.director.has_obstacles():
+		var before := position
 		position = main.director.resolve(position, body_radius * 0.8)
+		# Pressed against a ruin: slide along it, toward whichever end leads
+		# to the target, for a moment, so a wall diverts the horde rather than
+		# pinning it.
+		var shove := position - before
+		if shove.length_squared() > 0.25:
+			var n := shove.normalized()
+			var tan := Vector2(-n.y, n.x)
+			var want := dir.dot(tan)
+			if absf(want) < 0.15:
+				want = 1.0 if get_instance_id() % 2 == 0 else -1.0
+			_steer = tan * signf(want)
+			_steer_t = 0.6
 	if _spr != null:
 		_spr.frame = int(_anim * WALK_FPS) % _spr.hframes
 		# The art is drawn facing south: heads, snouts and outstretched hands all
@@ -292,7 +319,7 @@ func _physics_process(delta: float) -> void:
 		var f := clampf(_flash / 0.12, 0.0, 1.0)
 		_spr.modulate = tint.lerp(Color(2.4, 2.0, 2.0), f)
 	_tick -= delta
-	if _tick <= 0.0 and dist < body_radius + 22.0 and _can_contact():
+	if _tick <= 0.0 and global_position.distance_to(player.global_position) < body_radius + 22.0 and _can_contact():
 		var hit := dmg * _rally_dmg
 		if main and main.combat:
 			hit = main.combat.contact_damage(self, hit)
@@ -692,6 +719,17 @@ func _draw_elite_aura() -> void:
 			Color(1.0, 0.92, 0.55, 0.55 + 0.35 * pulse), 4.0)
 
 	var label: String = AFFIX_NAMES.get(affix, "ELITE")
+	if has_meta("marked"):
+		# A mission target: a turning crimson reticle, so it reads as "this
+		# one" from across the screen.
+		label = "MARKED"
+		var rr := body_radius + 30.0 + 4.0 * pulse
+		var spin := _anim * 1.5
+		for i in 4:
+			var a0 := spin + TAU * float(i) / 4.0
+			draw_arc(Vector2.ZERO, rr, a0, a0 + 0.9, 10, Color(1.0, 0.15, 0.15, 0.95), 4.0)
+			var d := Vector2.from_angle(a0 + 1.2)
+			draw_line(d * (rr - 10.0), d * (rr + 10.0), Color(1.0, 0.15, 0.15, 0.95), 3.0)
 	draw_string(ThemeDB.fallback_font, Vector2(-70, -body_radius - 14.0), label,
 		HORIZONTAL_ALIGNMENT_CENTER, 140, 22, c)
 

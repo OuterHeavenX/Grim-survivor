@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/thief.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"soul_thief"
+display_name = "Soul Thief"
+base_hp = 120.0
+base_damage = 0.0
+speed = 255.0
+xp_value = 12
+radius = 16.0
+walk_frames = 0
+tags = PackedStringArray("fiend")
+water_response = "normal"
+drop_profile = "none"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"flee": 1.0}

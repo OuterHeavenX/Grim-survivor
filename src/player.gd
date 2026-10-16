@@ -187,10 +187,10 @@ func _physics_process(delta: float) -> void:
 	velocity = move_vec * walk + push.limit_length(walk * MAX_PUSH_SHARE)
 	push = Vector2.ZERO
 	move_and_slide()
-	position.x = clampf(position.x, -ARENA, ARENA)
-	position.y = clampf(position.y, -ARENA, ARENA)
+	position.x = clampf(position.x, -gm.arena_half.x, gm.arena_half.x)
+	position.y = clampf(position.y, -gm.arena_half.y, gm.arena_half.y)
 	var main = get_tree().get_first_node_in_group("main")
-	if main and main.director and is_instance_valid(main.director) and not main.director.obstacles.is_empty():
+	if main and main.director and is_instance_valid(main.director) and main.director.has_obstacles():
 		position = main.director.resolve(position, 16.0)
 	var regen: float = gm.mods.add("regen")
 	if regen > 0.0 and hp < max_hp:
