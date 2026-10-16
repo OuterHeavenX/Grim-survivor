@@ -9,6 +9,7 @@ signal weapons_changed
 signal run_started
 signal run_ended(victory: bool)
 signal shards_changed
+signal progression_changed
 
 enum State{TITLE, RUNNING, LEVELUP, PAUSED, GAMEOVER, VICTORY, CHEST}
 
@@ -35,7 +36,34 @@ var META_BONUS: Dictionary = CONTENT.meta_bonus_dictionary()
 const SAVE_PATH := "user://grim_survivors.cfg"
 # Bumped when the save gains sections. Loading never requires it: every key
 # has a default, and saving rewrites only the keys this build owns.
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
+
+const ACHIEVEMENTS := [
+	{"id": "first_blood", "name": "FIRST BLOOD", "desc": "Slay 100 foes across all runs.",
+		"kind": "kills", "goal": 100, "reward": 25, "sigil": "ember"},
+	{"id": "grave_reaper", "name": "GRAVE REAPER", "desc": "Slay 1,000 foes across all runs.",
+		"kind": "kills", "goal": 1000, "reward": 100, "sigil": ""},
+	{"id": "road_worn", "name": "ROAD WORN", "desc": "Complete five runs.",
+		"kind": "runs", "goal": 5, "reward": 40, "sigil": ""},
+	{"id": "first_victory", "name": "DEATH DENIED", "desc": "Win your first run.",
+		"kind": "wins", "goal": 1, "reward": 75, "sigil": "gold"},
+	{"id": "collector", "name": "RELIC SEEKER", "desc": "Discover five altar relics.",
+		"kind": "relics", "goal": 5, "reward": 60, "sigil": "violet"},
+	{"id": "company", "name": "THE GATHERING", "desc": "Unlock six survivors.",
+		"kind": "survivors", "goal": 6, "reward": 80, "sigil": ""},
+	{"id": "scholar", "name": "SOUL SCHOLAR", "desc": "Buy ten permanent upgrade ranks.",
+		"kind": "upgrades", "goal": 10, "reward": 90, "sigil": ""},
+	{"id": "crowned", "name": "ASHEN SOVEREIGN", "desc": "Conquer the campaign.",
+		"kind": "crown", "goal": 1, "reward": 200, "sigil": "crown"},
+]
+
+const SIGILS := {
+	"ashen": {"name": "ASHEN", "color": Color(0.42, 0.46, 0.56), "achievement": ""},
+	"ember": {"name": "EMBER", "color": Color(1.0, 0.48, 0.18), "achievement": "first_blood"},
+	"gold": {"name": "VICTOR", "color": Color(1.0, 0.78, 0.28), "achievement": "first_victory"},
+	"violet": {"name": "RELICBOUND", "color": Color(0.72, 0.32, 1.0), "achievement": "collector"},
+	"crown": {"name": "CROWNED", "color": Color(0.95, 0.86, 0.55), "achievement": "crowned"},
+}
 
 var shards := 0
 var run_shards := 0
@@ -100,6 +128,11 @@ var run_relics: Array[String] = []
 var relics_discovered := {}
 # A campaign completion marker: cosmetic, not power.
 var campaign_crowned := false
+var lifetime_kills := 0
+var lifetime_runs := 0
+var lifetime_wins := 0
+var achievements := {}
+var selected_sigil := "ashen"
 
 const DEFAULT_SETTINGS := {
 	"shake": 1.0, "flashes": true, "damage_numbers": true,
@@ -146,8 +179,75 @@ func buy_track(track_id: String) -> bool:
 		return false
 	shards -= cost
 	meta[track_id] = meta_rank(track_id) + 1
+	refresh_achievements()
 	save_meta()
 	return true
+
+
+func achievement_value(kind: String) -> int:
+	match kind:
+		"kills": return lifetime_kills
+		"runs": return lifetime_runs
+		"wins": return lifetime_wins
+		"relics": return relics_discovered.size()
+		"survivors": return unlocked.size()
+		"upgrades":
+			var total := 0
+			for t in META_TRACKS:
+				total += meta_rank(str(t["id"]))
+			return total
+		"crown": return 1 if campaign_crowned else 0
+	return 0
+
+
+func achievement_progress(a: Dictionary) -> Dictionary:
+	var value := achievement_value(str(a["kind"]))
+	var goal := int(a["goal"])
+	return {"value": mini(value, goal), "goal": goal,
+		"unlocked": bool(achievements.get(str(a["id"]), false))}
+
+
+func refresh_achievements() -> Array[String]:
+	var newly: Array[String] = []
+	for a in ACHIEVEMENTS:
+		var id := str(a["id"])
+		if bool(achievements.get(id, false)):
+			continue
+		if achievement_value(str(a["kind"])) >= int(a["goal"]):
+			achievements[id] = true
+			shards += int(a["reward"])
+			newly.append(str(a["name"]))
+	if not newly.is_empty():
+		shards_changed.emit()
+		progression_changed.emit()
+	return newly
+
+
+func sigil_unlocked(id: String) -> bool:
+	if not SIGILS.has(id):
+		return false
+	var req := str(SIGILS[id]["achievement"])
+	return req.is_empty() or bool(achievements.get(req, false))
+
+
+func select_sigil(id: String) -> bool:
+	if not sigil_unlocked(id):
+		return false
+	selected_sigil = id
+	save_meta()
+	progression_changed.emit()
+	return true
+
+
+func sigil_color() -> Color:
+	return SIGILS.get(selected_sigil, SIGILS["ashen"])["color"]
+
+
+func next_achievement() -> Dictionary:
+	for a in ACHIEVEMENTS:
+		if not bool(achievements.get(str(a["id"]), false)):
+			return a
+	return {}
 
 
 func track_bonus_text(track_id: String) -> String:
@@ -248,6 +348,7 @@ func clear_campaign_stage(i: int) -> Array:
 	# Opening the next stage is what makes this a campaign; clearing stage 3 a
 	# second time must not push the frontier past stage 4.
 	campaign_unlocked = clampi(maxi(campaign_unlocked, i + 2), 1, STAGES.size())
+	refresh_achievements()
 	save_meta()
 	return freshly
 
@@ -265,6 +366,7 @@ func unlock_class(id: String) -> bool:
 		return false
 	shards -= cost
 	unlocked[id] = 1
+	refresh_achievements()
 	save_meta()
 	return true
 
@@ -407,6 +509,7 @@ func collect_relic() -> String:
 	if cid == "" or is_class_unlocked(cid):
 		return ""
 	unlocked[cid] = 1
+	refresh_achievements()
 	save_meta()
 	return cid
 
@@ -514,6 +617,7 @@ func discover_stage_relics(stage_id: String) -> Array:
 			relics_discovered[String(r.id)] = true
 			found.append(String(r.id))
 	if not found.is_empty():
+		refresh_achievements()
 		save_meta()
 	return found
 
@@ -652,9 +756,13 @@ func end_run(victory: bool) -> void:
 	best["kills"] = maxi(int(best["kills"]), kills)
 	best["level"] = maxi(int(best["level"]), level)
 	run_stats.finish(survived, victory, stages_cleared, evolved)
+	lifetime_runs += 1
+	lifetime_kills += kills
 	if victory:
 		best["wins"] = int(best["wins"]) + 1
+		lifetime_wins += 1
 		run_shards += 10
+	refresh_achievements()
 	bank_run_shards()
 	save_best()
 	run_ended.emit(victory)
@@ -677,6 +785,17 @@ func load_meta() -> void:
 			int(cfg.get_value("meta", "campaign_unlocked", 1)), 1, STAGES.size())
 		campaign = int(cfg.get_value("meta", "campaign_mode", 0)) > 0
 		campaign_crowned = int(cfg.get_value("meta", "campaign_crowned", 0)) > 0
+		lifetime_kills = maxi(0, int(cfg.get_value("progress", "lifetime_kills", cfg.get_value("best", "kills", 0))))
+		lifetime_runs = maxi(0, int(cfg.get_value("progress", "lifetime_runs", 0)))
+		lifetime_wins = maxi(0, int(cfg.get_value("progress", "lifetime_wins", cfg.get_value("best", "wins", 0))))
+		achievements = {}
+		for a in ACHIEVEMENTS:
+			var aid := str(a["id"])
+			if int(cfg.get_value("achievements", aid, 0)) > 0:
+				achievements[aid] = true
+		selected_sigil = str(cfg.get_value("progress", "selected_sigil", "ashen"))
+		if not sigil_unlocked(selected_sigil):
+			selected_sigil = "ashen"
 		relics_discovered = {}
 		for item in CONTENT.relics:
 			var r := item as RelicData
@@ -694,6 +813,11 @@ func load_meta() -> void:
 		campaign = false
 		campaign_crowned = false
 		relics_discovered = {}
+		lifetime_kills = 0
+		lifetime_runs = 0
+		lifetime_wins = 0
+		achievements = {}
+		selected_sigil = "ashen"
 
 
 func save_meta() -> void:
@@ -712,6 +836,13 @@ func save_meta() -> void:
 	cfg.set_value("meta", "loadout", ",".join(loadout))
 	cfg.set_value("meta", "campaign_crowned", 1 if campaign_crowned else 0)
 	cfg.set_value("meta", "save_version", SAVE_VERSION)
+	cfg.set_value("progress", "lifetime_kills", lifetime_kills)
+	cfg.set_value("progress", "lifetime_runs", lifetime_runs)
+	cfg.set_value("progress", "lifetime_wins", lifetime_wins)
+	cfg.set_value("progress", "selected_sigil", selected_sigil)
+	for a in ACHIEVEMENTS:
+		var aid := str(a["id"])
+		cfg.set_value("achievements", aid, 1 if bool(achievements.get(aid, false)) else 0)
 	for rid in relics_discovered:
 		cfg.set_value("relics", "found_" + String(rid), 1)
 	cfg.save(SAVE_PATH)

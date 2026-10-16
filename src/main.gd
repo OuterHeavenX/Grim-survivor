@@ -26,6 +26,7 @@ const RelicsScript := preload("res://src/relics/relic_manager.gd")
 const ControllerScript := preload("res://src/boss/boss_controller.gd")
 const AltarScript := preload("res://src/relics/relic_altar.gd")
 const SettingsScript := preload("res://src/settings_ui.gd")
+const UnlockablesScript := preload("res://src/unlockables_ui.gd")
 
 const MAX_ENEMIES := 70
 # A hard ceiling for drifted-away pickups, in case a kill storm outruns the
@@ -58,6 +59,7 @@ var fog_a: Node2D
 var fog_b: Node2D
 var ground: Node2D
 var settings_ui = null
+var unlockables_ui = null
 # Per-run systems, children of `run` so they die with it.
 var combat: CombatRules = null
 var relics: RelicManager = null
@@ -155,6 +157,8 @@ func _ready() -> void:
 	title_screen.start_pressed.connect(_on_start)
 	title_screen.upgrades_pressed.connect(_on_upgrades_open)
 	title_screen.weapons_pressed.connect(_on_weapons_open)
+	title_screen.survivors_pressed.connect(_on_start)
+	title_screen.unlocks_pressed.connect(_on_unlockables_open)
 
 	char_select = CharSelectScript.new()
 	add_child(char_select)
@@ -168,6 +172,10 @@ func _ready() -> void:
 	weapons_ui = WeaponsScript.new()
 	add_child(weapons_ui)
 	weapons_ui.closed.connect(_on_weapons_closed)
+
+	unlockables_ui = UnlockablesScript.new()
+	add_child(unlockables_ui)
+	unlockables_ui.closed.connect(_on_unlockables_closed)
 
 	settings_ui = SettingsScript.new()
 	add_child(settings_ui)
@@ -259,6 +267,9 @@ func show_title() -> void:
 	loot_ui.hide_screen()
 	char_select.hide_screen()
 	settings_ui.hide_screen()
+	upgrades_ui.hide_screen()
+	weapons_ui.hide_screen()
+	unlockables_ui.hide_screen()
 	title_screen.show_screen()
 
 
@@ -275,6 +286,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if k == KEY_ESCAPE or k == KEY_P:
 			if settings_ui.visible:
 				_on_settings_closed()
+			elif unlockables_ui.visible:
+				_on_unlockables_closed()
+			elif upgrades_ui.visible:
+				_on_upgrades_closed()
+			elif weapons_ui.visible:
+				_on_weapons_closed()
 			elif gm.state == gm.State.RUNNING:
 				_on_pause_button()
 			elif gm.state == gm.State.PAUSED:
@@ -554,6 +571,18 @@ func _on_weapons_open() -> void:
 	am.play("ui_click", -8.0)
 	title_screen.hide_screen()
 	weapons_ui.show_screen()
+
+
+func _on_unlockables_open() -> void:
+	am.play("ui_click", -8.0)
+	title_screen.hide_screen()
+	unlockables_ui.show_screen()
+
+
+func _on_unlockables_closed() -> void:
+	am.play("ui_click", -8.0)
+	unlockables_ui.hide_screen()
+	title_screen.show_screen()
 
 
 func _on_weapons_closed() -> void:
@@ -954,6 +983,7 @@ func _crown_campaign() -> void:
 	gm.add_shards(100)
 	if not gm.campaign_crowned:
 		gm.campaign_crowned = true
+		gm.refresh_achievements()
 		gm.save_meta()
 		_announce_unlocks(["THE CAMPAIGN IS WON"])
 

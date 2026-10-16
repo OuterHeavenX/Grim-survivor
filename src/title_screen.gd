@@ -1,305 +1,134 @@
 extends CanvasLayer
 
-
 signal start_pressed
+signal survivors_pressed
 signal weapons_pressed
 signal upgrades_pressed
+signal unlocks_pressed
 signal settings_pressed
 
-var gm = null
-var best_label: Label
-var shard_label: Label
-var sound_btn: Button
-var stage_btns: Array[Button] = []
-var stage_label: Label
-var length_btns: Array[Button] = []
-var length_label: Label
-var mode_btns: Array[Button] = []
-var mode_label: Label
+var gm
+var am
 var root_page: VBoxContainer
 var play_page: VBoxContainer
-var am = null
-
+var portrait: TextureRect
+var hero_panel: PanelContainer
+var hero_name: Label
+var hero_weapon: Label
+var progress_label: Label
+var next_label: Label
+var shard_label: Label
+var best_label: Label
+var sound_btn: Button
+var continue_btn: Button
+var stage_label: Label
+var length_label: Label
+var mode_label: Label
+var stage_btns: Array[Button] = []
+var length_btns: Array[Button] = []
+var mode_btns: Array[Button] = []
 
 func _ready() -> void:
-	layer = 15
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	gm = get_node("/root/GameManager")
-	am = get_node("/root/AudioMan")
-
-	var bg := ColorRect.new()
-	bg.color = Color(0.02, 0.03, 0.07, 1.0)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer = 15; process_mode = Node.PROCESS_MODE_ALWAYS
+	gm = get_node("/root/GameManager"); am = get_node("/root/AudioMan")
+	var bg := TextureRect.new(); bg.texture = load("res://assets/ground/ashen.png")
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT); bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED; bg.modulate = Color(0.3,0.28,0.36)
 	add_child(bg)
+	var veil := ColorRect.new(); veil.color = Color(0.01,0.015,0.03,0.78); veil.set_anchors_preset(Control.PRESET_FULL_RECT); add_child(veil)
+	var margin := MarginContainer.new(); margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	for side in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+side, 26)
+	add_child(margin)
+	var shell := VBoxContainer.new(); shell.add_theme_constant_override("separation", 8); margin.add_child(shell)
+	var top := HBoxContainer.new(); shell.add_child(top)
+	var brand := VBoxContainer.new(); brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL; top.add_child(brand)
+	brand.add_child(_label("GRIM SURVIVORS", 38, Color(0.92,0.89,0.82), HORIZONTAL_ALIGNMENT_LEFT))
+	brand.add_child(_label("THE ASHEN ALTAR", 18, Color(0.62,0.56,0.5), HORIZONTAL_ALIGNMENT_LEFT))
+	shard_label = _label("",22,Color(0.78,0.48,1)); shard_label.custom_minimum_size=Vector2(90,60); top.add_child(shard_label)
+	sound_btn = _button("",86,60,14,_on_sound); top.add_child(sound_btn)
+	top.add_child(_button("SET",72,60,14,func(): settings_pressed.emit()))
+	root_page=VBoxContainer.new(); root_page.size_flags_vertical=Control.SIZE_EXPAND_FILL; root_page.add_theme_constant_override("separation",8); shell.add_child(root_page)
+	progress_label=_label("",22,Color(0.88,0.7,0.36)); root_page.add_child(progress_label)
+	hero_panel=PanelContainer.new(); hero_panel.size_flags_vertical=Control.SIZE_EXPAND_FILL; root_page.add_child(hero_panel)
+	var hero:=VBoxContainer.new(); hero.alignment=BoxContainer.ALIGNMENT_CENTER; hero_panel.add_child(hero)
+	hero.add_child(_label("SELECTED SURVIVOR",18,Color(0.55,0.57,0.65)))
+	var pc:=CenterContainer.new(); portrait=TextureRect.new(); portrait.custom_minimum_size=Vector2(300,300)
+	portrait.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED; pc.add_child(portrait); hero.add_child(pc)
+	hero_name=_label("",36,Color(0.94,0.9,0.8)); hero.add_child(hero_name)
+	hero_weapon=_label("",19,Color(0.65,0.62,0.68)); hero.add_child(hero_weapon)
+	continue_btn=_button("CONTINUE",0,92,35,func(): _show_page(true)); continue_btn.add_theme_color_override("font_color",Color(1,0.79,0.34)); root_page.add_child(continue_btn)
+	next_label=_label("",18,Color(0.62,0.55,0.72)); root_page.add_child(next_label)
+	var nav:=HBoxContainer.new(); nav.alignment=BoxContainer.ALIGNMENT_CENTER; nav.add_theme_constant_override("separation",8); root_page.add_child(nav)
+	for item in [["SURVIVORS",func(): survivors_pressed.emit()],["ARMOURY",func(): weapons_pressed.emit()],["UPGRADES",func(): upgrades_pressed.emit()],["UNLOCKS",func(): unlocks_pressed.emit()]]:
+		nav.add_child(_button(item[0],154,72,17,item[1]))
+	best_label=_label("",17,Color(0.48,0.5,0.58)); root_page.add_child(best_label)
+	play_page=VBoxContainer.new(); play_page.visible=false; play_page.size_flags_vertical=Control.SIZE_EXPAND_FILL
+	play_page.alignment=BoxContainer.ALIGNMENT_CENTER; play_page.add_theme_constant_override("separation",14); shell.add_child(play_page)
+	play_page.add_child(_label("CHOOSE YOUR DESCENT",40,Color(0.92,0.86,0.72))); play_page.add_child(_stage_picker())
+	play_page.add_child(_center_button("ENTER THE ASH",520,88,30,func(): start_pressed.emit()))
+	play_page.add_child(_center_button("BACK TO ALTAR",520,78,25,func(): _show_page(false)))
+	_refresh_stages(); _refresh_sound(); _refresh_root()
 
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+func _button(text:String,w:float,h:float,fs:int,action:Callable)->Button:
+	var b:=Button.new(); b.text=text; b.custom_minimum_size=Vector2(w,h); b.add_theme_font_size_override("font_size",fs); b.pressed.connect(action); return b
 
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 22)
-	vb.alignment = BoxContainer.ALIGNMENT_CENTER
-	center.add_child(vb)
+func _center_button(text:String,w:float,h:float,fs:int,action:Callable)->Control:
+	var c:=CenterContainer.new(); c.add_child(_button(text,w,h,fs,action)); return c
 
-	var title := _label("GRIM SURVIVORS", 76, Color(0.85, 0.88, 0.96))
-	vb.add_child(title)
-	vb.add_child(_label("Eight stages. Choose your ground and your hour.", 26, Color(0.55, 0.6, 0.72)))
+func _style(color:Color)->StyleBoxFlat:
+	var s:=StyleBoxFlat.new(); s.bg_color=Color(0.035,0.038,0.06,0.94); s.border_color=color; s.set_border_width_all(3); s.set_corner_radius_all(12)
+	s.content_margin_left=12; s.content_margin_right=12; s.content_margin_top=12; s.content_margin_bottom=12; return s
 
-	# Two pages so the title is not a wall of controls: the root offers the
-	# three things you can do, and PLAY opens the run setup.
-	root_page = VBoxContainer.new()
-	root_page.add_theme_constant_override("separation", 16)
-	vb.add_child(root_page)
-	root_page.add_child(_big_button("PLAY", Color(0.9, 0.93, 1.0),
-		func () -> void: _show_page(true)))
-	root_page.add_child(_big_button("ARMOURY", Color(0.95, 0.75, 0.35),
-		func () -> void: weapons_pressed.emit()))
-	root_page.add_child(_big_button("UPGRADES", Color(0.85, 0.6, 1.0),
-		func () -> void: upgrades_pressed.emit()))
-	root_page.add_child(_big_button("SETTINGS", Color(0.6, 0.75, 0.9),
-		func () -> void: settings_pressed.emit()))
+func _refresh_root()->void:
+	var c:Dictionary=gm.class_by_id(gm.selected_class); hero_name.text=str(c.get("name","WANDERER")).to_upper()
+	var w:Dictionary=gm.WEAPONS.get(str(c.get("weapon","")),{}); hero_weapon.text="%s  •  %s"%[w.get("name","UNKNOWN ARM"),c.get("flavor","")]
+	portrait.texture=load("res://assets/sprites/player_%s_portrait.png"%gm.selected_class); hero_panel.add_theme_stylebox_override("panel",_style(gm.sigil_color()))
+	progress_label.text="CAMPAIGN  %s     %s SIGIL"%[gm.campaign_progress(),gm.SIGILS[gm.selected_sigil]["name"]]; shard_label.text="%d SOULS"%gm.shards
+	var a:Dictionary=gm.next_achievement()
+	if a.is_empty(): next_label.text="ALL CHALLENGES CONQUERED"
+	else:
+		var p:Dictionary=gm.achievement_progress(a); next_label.text="NEXT UNLOCK  •  %s  %d/%d"%[a["name"],p["value"],p["goal"]]
+	var b:Dictionary=gm.best; var t:=int(float(b.get("time",0)))
+	best_label.text="BEST  %d:%02d     %d SLAIN     LEVEL %d     %d VICTORIES"%[t/60,t%60,b.get("kills",0),b.get("level",0),b.get("wins",0)]
+	if gm.campaign_crowned: best_label.text += "     CROWNED"
 
-	play_page = VBoxContainer.new()
-	play_page.add_theme_constant_override("separation", 10)
-	play_page.visible = false
-	vb.add_child(play_page)
-	play_page.add_child(_stage_picker())
-	play_page.add_child(_big_button("START", Color(0.9, 0.93, 1.0),
-		func () -> void: start_pressed.emit()))
-	play_page.add_child(_big_button("BACK", Color(0.55, 0.6, 0.72),
-		func () -> void: _show_page(false)))
-
-	var shard_center := CenterContainer.new()
-	var shard_hb := HBoxContainer.new()
-	shard_hb.add_theme_constant_override("separation", 10)
-	var shard_icon := TextureRect.new()
-	shard_icon.texture = UIBits.shard_texture(32)
-	shard_icon.custom_minimum_size = Vector2(32, 32)
-	shard_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	shard_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	shard_hb.add_child(shard_icon)
-	shard_label = _label("", 30, Color(0.75, 0.45, 1.0))
-	shard_hb.add_child(shard_label)
-	shard_center.add_child(shard_hb)
-	vb.add_child(shard_center)
-
-	best_label = _label("", 26, Color(1.0, 0.85, 0.4))
-	vb.add_child(best_label)
-
-	vb.add_child(_label("Move: WASD / arrows / stick, or drag on touch", 22, Color(0.45, 0.5, 0.62)))
-	vb.add_child(_label("Weapons fire on their own. Grab the gems.", 22, Color(0.45, 0.5, 0.62)))
-
-	sound_btn = Button.new()
-	sound_btn.add_theme_font_size_override("font_size", 34)
-	sound_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	sound_btn.offset_left = -96
-	sound_btn.offset_top = 24
-	sound_btn.offset_right = -24
-	sound_btn.offset_bottom = 96
-	sound_btn.pressed.connect(_on_sound)
-	add_child(sound_btn)
-
-	# show_screen() also refreshes, but the title is visible from boot without
-	# necessarily going through it, so seed the picker's state here.
-	_refresh_stages()
-	_refresh_sound()
-
-
-func _stage_picker() -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-
-	# Mode first: it decides whether the stage grid below is gated, so it wants
-	# to be the thing read first.
-	var mrow := HBoxContainer.new()
-	mrow.add_theme_constant_override("separation", 10)
-	mrow.alignment = BoxContainer.ALIGNMENT_CENTER
-	for m in [false, true]:
-		var b := Button.new()
-		b.text = "CAMPAIGN" if m else "FREE PLAY"
-		b.custom_minimum_size = Vector2(176, 54)
-		b.add_theme_font_size_override("font_size", 22)
-		b.pressed.connect(_on_mode.bind(m))
-		mode_btns.append(b)
-		mrow.add_child(b)
-	var mc := CenterContainer.new()
-	mc.add_child(mrow)
-	box.add_child(mc)
-
-	mode_label = _label("", 20, Color(0.62, 0.66, 0.78))
-	box.add_child(mode_label)
-
-	# Eight stages will not fit on one phone-width row, so wrap them.
-	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 8)
-	grid.add_theme_constant_override("v_separation", 8)
+func _stage_picker()->Control:
+	var box:=VBoxContainer.new(); box.add_theme_constant_override("separation",10)
+	var modes:=HBoxContainer.new(); modes.alignment=BoxContainer.ALIGNMENT_CENTER
+	for mode in [false,true]:
+		var b:=_button("CAMPAIGN" if mode else "FREE PLAY",230,64,22,_on_mode.bind(mode)); mode_btns.append(b); modes.add_child(b)
+	box.add_child(modes); mode_label=_label("",20,Color(0.62,0.66,0.78)); box.add_child(mode_label)
+	var grid:=GridContainer.new(); grid.columns=4
 	for i in gm.STAGES.size():
-		var b := Button.new()
-		b.text = _numeral(i)
-		b.custom_minimum_size = Vector2(104, 56)
-		b.add_theme_font_size_override("font_size", 24)
-		b.pressed.connect(_on_stage.bind(i))
-		stage_btns.append(b)
-		grid.add_child(b)
-	var gc := CenterContainer.new()
-	gc.add_child(grid)
-	box.add_child(gc)
+		var b:=_button(_numeral(i),130,68,24,_on_stage.bind(i)); stage_btns.append(b); grid.add_child(b)
+	var gc:=CenterContainer.new(); gc.add_child(grid); box.add_child(gc); stage_label=_label("",22,Color(0.68,0.66,0.7)); box.add_child(stage_label)
+	var lengths:=HBoxContainer.new(); lengths.alignment=BoxContainer.ALIGNMENT_CENTER
+	for minutes in gm.RUN_LENGTHS:
+		var b:=_button(str(minutes),100,60,22,_on_length.bind(int(minutes))); length_btns.append(b); lengths.add_child(b)
+	box.add_child(lengths); length_label=_label("",20,Color(0.62,0.66,0.78)); box.add_child(length_label); return box
 
-	stage_label = _label("", 22, Color(0.62, 0.66, 0.78))
-	box.add_child(stage_label)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	for m in gm.RUN_LENGTHS:
-		var b := Button.new()
-		b.text = "%d" % m
-		b.custom_minimum_size = Vector2(82, 54)
-		b.add_theme_font_size_override("font_size", 24)
-		b.pressed.connect(_on_length.bind(int(m)))
-		length_btns.append(b)
-		row.add_child(b)
-	var lc := CenterContainer.new()
-	lc.add_child(row)
-	box.add_child(lc)
-
-	length_label = _label("", 22, Color(0.62, 0.66, 0.78))
-	box.add_child(length_label)
-	return box
-
-
-func _on_length(m: int) -> void:
-	am.play("ui_click", -8.0)
-	gm.selected_minutes = m
+func _on_length(m:int)->void: am.play("ui_click",-8); gm.selected_minutes=m; _refresh_stages()
+func _on_stage(i:int)->void:
+	if not gm.campaign_stage_open(i): am.play("ui_click",-16); mode_label.text="LOCKED — CLEAR THE PREVIOUS STAGE"; return
+	am.play("ui_click",-8); gm.selected_stage=i; _refresh_stages()
+func _on_mode(on:bool)->void:
+	am.play("ui_click",-8); gm.campaign=on
+	if not gm.campaign_stage_open(gm.selected_stage): gm.selected_stage=maxi(0,gm.campaign_unlocked-1)
 	_refresh_stages()
-
-
-func _on_stage(i: int) -> void:
-	if not gm.campaign_stage_open(i):
-		# Locked in campaign. Say so rather than silently doing nothing.
-		am.play("ui_click", -16.0)
-		if mode_label != null:
-			mode_label.text = "STAGE %s IS LOCKED \u2014 CLEAR STAGE %s FIRST" % [
-				_numeral(i), _numeral(int(gm.campaign_unlocked) - 1)]
-		return
-	am.play("ui_click", -8.0)
-	gm.selected_stage = i
-	_refresh_stages()
-
-
-func _on_mode(on: bool) -> void:
-	am.play("ui_click", -8.0)
-	gm.campaign = on
-	# Switching into campaign with a locked stage selected would start a run the
-	# mode does not allow, so pull the selection back to the frontier.
-	if not gm.campaign_stage_open(int(gm.selected_stage)):
-		gm.selected_stage = maxi(0, int(gm.campaign_unlocked) - 1)
-	_refresh_stages()
-
-
-func _numeral(i: int) -> String:
-	const NUMERALS := ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"]
-	return NUMERALS[i] if i < NUMERALS.size() else str(i + 1)
-
-
-func _refresh_stages() -> void:
+func _refresh_stages()->void:
 	for i in stage_btns.size():
-		var chosen: bool = i == int(gm.selected_stage)
-		var open_i: bool = gm.campaign_stage_open(i)
-		var b: Button = stage_btns[i]
-		if not open_i:
-			b.text = "\u2500"
-			b.add_theme_color_override("font_color", Color(0.34, 0.36, 0.42))
-			continue
-		b.text = "[ %s ]" % _numeral(i) if chosen else _numeral(i)
-		b.add_theme_color_override("font_color",
-			Color(1.0, 0.82, 0.35) if chosen else Color(0.5, 0.54, 0.64))
-
-	for i in mode_btns.size():
-		var is_campaign: bool = i == 1
-		var picked: bool = is_campaign == bool(gm.campaign)
-		var mb: Button = mode_btns[i]
-		mb.add_theme_color_override("font_color",
-			Color(1.0, 0.82, 0.35) if picked else Color(0.5, 0.54, 0.64))
-	if mode_label != null:
-		if gm.campaign:
-			mode_label.text = "%s \u2014 CLEAR A STAGE TO OPEN THE NEXT" % gm.campaign_progress()
-		else:
-			mode_label.text = "EVERY STAGE OPEN \u2014 NO PROGRESS SAVED"
-	if stage_label != null:
-		var sd: Dictionary = gm.STAGES[clampi(int(gm.selected_stage), 0, gm.STAGES.size() - 1)]
-		stage_label.text = "%s  \u2014  %s" % [str(sd["name"]), str(sd["boss_name"])]
-
-	var lengths: Array = gm.RUN_LENGTHS
-	for i in length_btns.size():
-		var picked: bool = int(lengths[i]) == int(gm.selected_minutes)
-		var b: Button = length_btns[i]
-		b.text = "[%d]" % int(lengths[i]) if picked else "%d" % int(lengths[i])
-		b.add_theme_color_override("font_color",
-			Color(1.0, 0.82, 0.35) if picked else Color(0.5, 0.54, 0.64))
-	if length_label != null:
-		var n: int = gm.stages_in_run()
-		length_label.text = "%d min  \u2014  %d stage%s" % [int(gm.selected_minutes), n, "" if n == 1 else "s"]
-
-
-func _big_button(text: String, col: Color, on_press: Callable) -> Control:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(420, 92)
-	b.add_theme_font_size_override("font_size", 34)
-	b.add_theme_color_override("font_color", col)
-	b.pressed.connect(on_press)
-	var c := CenterContainer.new()
-	c.add_child(b)
-	return c
-
-
-func _show_page(play: bool) -> void:
-	am.play("ui_click", -8.0)
-	root_page.visible = not play
-	play_page.visible = play
-
-
-func _label(text: String, fs: int, col: Color) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", fs)
-	l.add_theme_color_override("font_color", col)
-	l.add_theme_color_override("font_outline_color", Color(0, 0, 0))
-	l.add_theme_constant_override("outline_size", 6)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return l
-
-
-func show_screen() -> void:
-	if root_page != null:
-		root_page.visible = true
-	if play_page != null:
-		play_page.visible = false
-	_refresh_stages()
-	_refresh_sound()
-	var b: Dictionary = gm.best
-	var t := float(b.get("time", 0.0))
-	best_label.text = "BEST  %d:%02d    %d slain    Lv %d    %d victories" % [
-		int(t) / 60, int(t) % 60,
-		int(b.get("kills", 0)), int(b.get("level", 0)), int(b.get("wins", 0)),
-	]
-	if gm.campaign_crowned:
-		best_label.text += "\nCROWNED: THE CAMPAIGN IS WON"
-	shard_label.text = "%d soul shards" % gm.shards
-	visible = true
-
-
-func hide_screen() -> void:
-	visible = false
-
-
-func _on_sound() -> void:
-	am.toggle_mute()
-	_refresh_sound()
-	am.play("ui_click", -8.0)
-
-
-func _refresh_sound() -> void:
-	sound_btn.text = "🔇" if am.is_muted() else "🔊"
+		var is_open: bool=gm.campaign_stage_open(i); stage_btns[i].text=("[ %s ]"%_numeral(i)) if is_open and i==gm.selected_stage else (_numeral(i) if is_open else "—"); stage_btns[i].disabled=not is_open
+	for i in mode_btns.size(): mode_btns[i].add_theme_color_override("font_color",Color(1,0.79,0.34) if (i==1)==gm.campaign else Color(0.55,0.58,0.66))
+	mode_label.text=gm.campaign_progress()+(" — PROGRESS SAVED" if gm.campaign else " — ALL STAGES OPEN")
+	var sd:Dictionary=gm.STAGES[clampi(gm.selected_stage,0,gm.STAGES.size()-1)]; stage_label.text="%s  —  %s"%[sd["name"],sd["boss_name"]]
+	for i in length_btns.size(): length_btns[i].text=("[ %d ]"%gm.RUN_LENGTHS[i]) if gm.RUN_LENGTHS[i]==gm.selected_minutes else str(gm.RUN_LENGTHS[i])
+	length_label.text="%d MINUTES  •  %d STAGE%s"%[gm.selected_minutes,gm.stages_in_run(),"" if gm.stages_in_run()==1 else "S"]
+func _numeral(i:int)->String:
+	const N:=["I","II","III","IV","V","VI","VII","VIII"]; return N[i] if i<N.size() else str(i+1)
+func _show_page(play:bool)->void: am.play("ui_click",-8); root_page.visible=not play; play_page.visible=play; _refresh_stages()
+func _label(text:String,fs:int,color:Color,align:=HORIZONTAL_ALIGNMENT_CENTER)->Label:
+	var l:=Label.new(); l.text=text; l.add_theme_font_size_override("font_size",fs); l.add_theme_color_override("font_color",color); l.add_theme_color_override("font_outline_color",Color.BLACK); l.add_theme_constant_override("outline_size",6); l.horizontal_alignment=align; return l
+func show_screen()->void: root_page.visible=true; play_page.visible=false; _refresh_root(); _refresh_stages(); _refresh_sound(); visible=true; continue_btn.grab_focus()
+func hide_screen()->void: visible=false
+func _on_sound()->void: am.toggle_mute(); _refresh_sound(); am.play("ui_click",-8)
+func _refresh_sound()->void: sound_btn.text="SOUND OFF" if am.is_muted() else "SOUND ON"
