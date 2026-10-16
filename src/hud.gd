@@ -240,8 +240,8 @@ func _ready() -> void:
 	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	hint_label.offset_left = -340
 	hint_label.offset_right = 340
-	hint_label.offset_top = -250
-	hint_label.offset_bottom = -150
+	hint_label.offset_top = -350
+	hint_label.offset_bottom = -250
 	hint_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
 	hint_label.modulate.a = 0.0
 	add_child(hint_label)

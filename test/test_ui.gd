@@ -70,7 +70,7 @@ func _process(_delta: float) -> void:
 				_check(bad.is_empty(), "no tofu glyphs in upgrades UI")
 				var panels: Array = []
 				_panels(ui, panels)
-				_check(panels.size() == 6, "six track cards built")
+				_check(panels.size() == _gm.META_TRACKS.size(), "a card for every track")
 				var ok := true
 				for p in panels:
 					if (p as PanelContainer).size.x > 680.0:

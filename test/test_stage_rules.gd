@@ -296,11 +296,13 @@ func _desert() -> void:
 	# Wind keeps pickups in bounds.
 	r.start_storm()
 	_check(_main.director.veil.target > 0.3, "desert: storms cut visibility")
-	var g = _main.spawn_gem(Vector2(1480, 1480), 1)
+	# The desert is wider than it is tall now; test against its real bounds.
+	var half: Vector2 = _gm.arena_half
+	var g = _main.spawn_gem(half - Vector2(20, 20), 1)
 	for i in 120:
 		r.apply_wind(0.1)
 	for gem in get_tree().get_nodes_in_group("gems"):
-		_check(absf(gem.position.x) <= 1500.0 and absf(gem.position.y) <= 1500.0, "desert: wind never pushes pickups out")
+		_check(absf(gem.position.x) <= half.x and absf(gem.position.y) <= half.y, "desert: wind never pushes pickups out")
 	# Shelter cancels the shove.
 	p.global_position = mid + r.wind * 120.0
 	p.push = Vector2.ZERO
