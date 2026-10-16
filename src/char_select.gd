@@ -89,9 +89,9 @@ func _ready() -> void:
 	vb.add_child(HSeparator.new())
 
 	var run := Button.new()
-	run.text = "RUN"
-	run.custom_minimum_size = Vector2(420, 96)
-	run.add_theme_font_size_override("font_size", 36)
+	run.text = "RUN WITH THIS SURVIVOR"
+	run.custom_minimum_size = Vector2(560, 96)
+	run.add_theme_font_size_override("font_size", 30)
 	run.pressed.connect(func () -> void: run_pressed.emit())
 	var rc := CenterContainer.new()
 	rc.add_child(run)
@@ -151,6 +151,11 @@ func _class_card(c: Dictionary) -> Dictionary:
 	var wpn := _label("Starts with: " + weapon_name, 21, Color(0.75, 0.55, 1.0))
 	wpn.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	info.add_child(wpn)
+	var lock_l := _label("", 19, Color(1.0, 0.78, 0.4))
+	lock_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	lock_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lock_l.visible = false
+	info.add_child(lock_l)
 
 	var side := VBoxContainer.new()
 	side.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -161,7 +166,7 @@ func _class_card(c: Dictionary) -> Dictionary:
 	action.pressed.connect(_on_action.bind(id))
 	side.add_child(action)
 
-	return {"node": panel, "refs": {"panel": panel, "sb": sb, "action": action, "name_l": name_l}}
+	return {"node": panel, "refs": {"panel": panel, "sb": sb, "action": action, "name_l": name_l, "lock_l": lock_l}}
 
 
 func _label(text: String, fs: int, col: Color) -> Label:
@@ -192,6 +197,8 @@ func refresh() -> void:
 		var sb: StyleBoxFlat = refs["sb"]
 		var action: Button = refs["action"]
 		var cost := int(c["cost"])
+		var lock_l: Label = refs["lock_l"]
+		lock_l.visible = false
 		if id == gm.selected_class:
 			sb.border_color = Color(1.0, 0.8, 0.35)
 			action.text = "ACTIVE"
@@ -209,7 +216,12 @@ func refresh() -> void:
 			sb.border_color = Color(0.3, 0.26, 0.2)
 			action.icon = null
 			var st: int = gm.relic_stage_for_class(id)
-			action.text = "STAGE %d" % (st + 1) if st >= 0 else "LOCKED"
+			action.text = "LOCKED"
+			if st >= 0:
+				var wname := str(gm.WEAPONS.get(str(c["weapon"]), {}).get("name", "their weapon"))
+				lock_l.text = "Find both %s relics in Stage %s, %s, or clear it in the campaign." % [
+					wname, ["I","II","III","IV","V","VI","VII","VIII"][clampi(st, 0, 7)], str(gm.STAGES[st]["name"])]
+				lock_l.visible = true
 			action.disabled = true
 			action.modulate = Color(1, 1, 1, 0.9)
 			action.add_theme_color_override("font_disabled_color", Color(1.0, 0.82, 0.35))

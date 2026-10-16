@@ -151,6 +151,7 @@ func _make_sprite() -> void:
 	# Draw under the node's own _draw(), so the shadow, elite aura and hit
 	# flash still land on top of the body.
 	_spr.show_behind_parent = true
+	_spr.material = _outline_material()
 	add_child(_spr)
 
 
@@ -900,3 +901,16 @@ func _draw_cinderking() -> void:
 
 	draw_circle(Vector2(-12, -22), 4.5, Color(1.0, 0.6, 0.15))
 	draw_circle(Vector2(12, -22), 4.5, Color(1.0, 0.6, 0.15))
+
+
+static var _outline_mat: ShaderMaterial = null
+
+
+# One material shared by every sprite of this kind, so they still batch.
+static func _outline_material() -> ShaderMaterial:
+	if _outline_mat == null:
+		_outline_mat = ShaderMaterial.new()
+		_outline_mat.shader = preload("res://src/fx/outline.gdshader")
+		_outline_mat.set_shader_parameter("outline_color", Color(1.0, 0.3, 0.18, 0.95))
+		_outline_mat.set_shader_parameter("width", 2.2)
+	return _outline_mat

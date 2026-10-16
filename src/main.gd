@@ -154,7 +154,8 @@ func _ready() -> void:
 
 	title_screen = TitleScript.new()
 	add_child(title_screen)
-	title_screen.start_pressed.connect(_on_start)
+	title_screen.start_pressed.connect(start_run)
+	title_screen.daily_pressed.connect(_on_daily)
 	title_screen.upgrades_pressed.connect(_on_upgrades_open)
 	title_screen.weapons_pressed.connect(_on_weapons_open)
 	title_screen.survivors_pressed.connect(_on_start)
@@ -251,6 +252,41 @@ func start_run() -> void:
 	hud.hide_boss()
 	_begin_stage_director()
 	am.set_intense(false)
+	_opening_wave()
+	if gm.lifetime_runs == 0:
+		hud.show_hint(_move_hint(), 5.0)
+		hud.show_hint("GATHER THE GLOWING GEMS\nEVERY LEVEL OFFERS A NEW POWER", 5.0)
+
+
+# A run used to open on an empty screen while the first few enemies walked in
+# from beyond its edge. Put a loose ring of the stage's weakest foes just out of
+# reach instead, so the weapon fires inside the first second and the first
+# level-up lands within ten.
+const OPENING_WAVE := 7
+
+
+func _opening_wave() -> void:
+	if player == null:
+		return
+	var pool: Array = gm.stage_data()["pool"]
+	if pool.is_empty():
+		return
+	var base := randf() * TAU
+	for i in OPENING_WAVE:
+		var ang := base + TAU * float(i) / float(OPENING_WAVE) + randf_range(-0.2, 0.2)
+		var pos: Vector2 = player.position + Vector2.from_angle(ang) * randf_range(480.0, 600.0)
+		_spawn_enemy(str(pool[0]), clamp_arena(pos, 40.0))
+
+
+func _move_hint() -> String:
+	if DisplayServer.is_touchscreen_available():
+		return "DRAG ANYWHERE TO MOVE\nYOUR WEAPONS STRIKE ON THEIR OWN"
+	return "WASD / ARROWS TO MOVE\nYOUR WEAPONS STRIKE ON THEIR OWN"
+
+
+func _on_daily() -> void:
+	gm.daily = true
+	start_run()
 
 
 func show_title() -> void:
@@ -260,6 +296,7 @@ func show_title() -> void:
 	boss = null
 	get_tree().paused = false
 	gm.state = gm.State.TITLE
+	gm.daily = false
 	hud.set_run_visible(false)
 	end_screen.hide_screen()
 	pause_menu.hide_screen()
@@ -384,6 +421,26 @@ func _on_upgrade_chosen() -> void:
 	else:
 		am.duck(false)
 		gm.state = gm.State.RUNNING
+		_levelup_blast()
+
+
+# Choosing an upgrade releases a ring of force: the horde that closed in while
+# the player read the cards is thrown back, so the new power gets a beat of
+# room to show itself instead of resuming straight into a body block.
+func _levelup_blast() -> void:
+	if player == null or not is_instance_valid(player):
+		return
+	var at: Vector2 = player.global_position
+	jm.shockwave(at, Color(1.0, 0.82, 0.4), 320.0)
+	jm.add_trauma(0.18)
+	lm.flash(at, Color(1.0, 0.78, 0.35), 2.0, 3.0, 0.3)
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(e) or e.is_boss():
+			continue
+		var d: Vector2 = e.global_position - at
+		var dist := d.length()
+		if dist < 300.0 and dist > 0.5:
+			e._kb += d / dist * lerpf(900.0, 300.0, dist / 300.0)
 
 
 func _on_player_died() -> void:
@@ -978,7 +1035,7 @@ func _crown_campaign() -> void:
 	# The last throne's reward is recognition, not power: a crown marker on
 	# the title screen, a large shard payout, and its legendary relic now in
 	# the altar pool (discovered just above).
-	if not gm.campaign:
+	if not gm.campaign_run():
 		return
 	gm.add_shards(100)
 	if not gm.campaign_crowned:

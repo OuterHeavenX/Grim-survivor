@@ -400,14 +400,30 @@ func _draw() -> void:
 			_draw_boom()
 
 
+# A tapering light trail behind a thrown blade: small steel on dark ground was
+# the hardest thing on screen to follow.
+func _streak(length: float, width: float, col: Color) -> void:
+	draw_polygon(PackedVector2Array([
+		Vector2(-6, -width), Vector2(-6 - length, 0), Vector2(-6, width),
+	]), PackedColorArray([col, Color(col, 0.0), col]))
+
+
 func _draw_dagger() -> void:
 	var ang := vel.angle() if vel.length() > 1.0 else 0.0
 	draw_set_transform(Vector2.ZERO, ang, Vector2.ONE)
+	_streak(34.0, 3.5, Color(1.0, 0.92, 0.7, 0.45))
+	draw_colored_polygon([
+		Vector2(16, 0), Vector2(2, 5.5), Vector2(-11, 5.5),
+		Vector2(-11, -5.5), Vector2(2, -5.5),
+	], Color(0.05, 0.04, 0.06, 0.9))
 	draw_colored_polygon([
 		Vector2(14, 0), Vector2(2, 4), Vector2(-10, 4),
 		Vector2(-10, -4), Vector2(2, -4),
-	], Color(0.75, 0.78, 0.85))
-	draw_line(Vector2(-10, 0), Vector2(-14, 0), Color(0.4, 0.2, 0.1), 3.0)
+	], Color(0.92, 0.94, 1.0))
+	draw_colored_polygon([
+		Vector2(14, 0), Vector2(2, 1.2), Vector2(2, -1.2),
+	], Color(1.0, 1.0, 1.0))
+	draw_line(Vector2(-10, 0), Vector2(-14, 0), Color(0.55, 0.3, 0.12), 3.0)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -415,6 +431,7 @@ func _draw_sdagger() -> void:
 
 	var ang := vel.angle() if vel.length() > 1.0 else 0.0
 	draw_set_transform(Vector2.ZERO, ang, Vector2.ONE)
+	_streak(30.0, 3.0, Color(0.55, 0.7, 1.0, 0.5))
 	draw_colored_polygon([
 		Vector2(13, 0), Vector2(2, 3), Vector2(-9, 3),
 		Vector2(-9, -3), Vector2(2, -3),

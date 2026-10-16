@@ -121,6 +121,10 @@ var best := {"time": 0.0, "kills": 0, "level": 0, "wins": 0}
 # report can name the run it came from. -1 means "roll one"; tests pin it.
 var run_seed := 0
 var forced_seed := -1
+# The Daily Rite: one stage and one seed per calendar day, the same for
+# everyone, five minutes long. It never touches campaign progress.
+var daily := false
+var daily_best := {"date": "", "time": 0.0, "kills": 0}
 var run_stats: RunStats = RunStats.new()
 var mods: GameModifiers = GameModifiers.new()
 # Run relics held this run (ids, in pick order) and the ones ever discovered.
@@ -311,6 +315,27 @@ func campaign_stage_open(i: int) -> bool:
 	return i < campaign_unlocked
 
 
+func campaign_run() -> bool:
+	return campaign and not daily
+
+
+func daily_key() -> String:
+	var d := Time.get_date_dict_from_system()
+	return "%04d-%02d-%02d" % [d["year"], d["month"], d["day"]]
+
+
+func daily_seed() -> int:
+	return abs(hash("grim-daily:" + daily_key())) % 1000000
+
+
+func daily_stage() -> int:
+	return daily_seed() % STAGES.size()
+
+
+func run_minutes() -> int:
+	return 5 if daily else selected_minutes
+
+
 func campaign_progress() -> String:
 	return "%d / %d STAGES" % [campaign_unlocked, STAGES.size()]
 
@@ -334,7 +359,7 @@ func clear_campaign_stage(i: int) -> Array:
 	# them. Already-owned ones are dropped: telling the player they unlocked
 	# something they have had for an hour is noise.
 	var freshly: Array = []
-	if not campaign:
+	if not campaign_run():
 		return freshly
 	if i < 0 or i >= STAGES.size():
 		return freshly
@@ -459,12 +484,19 @@ func consume_revive() -> bool:
 	return false
 
 
+# The first few levels come fast so the first upgrade lands inside the opening
+# ten seconds; from level 5 on this is the original 5 + 6n curve.
+const EARLY_XP := [3, 6, 10, 16]
+
+
 func xp_needed() -> int:
+	if level - 1 < EARLY_XP.size():
+		return EARLY_XP[level - 1]
 	return 5 + (level - 1) * 6
 
 
 func stages_in_run() -> int:
-	return maxi(1, int(round(float(selected_minutes) * 60.0 / RUN_DURATION)))
+	return maxi(1, int(round(float(run_minutes()) * 60.0 / RUN_DURATION)))
 
 
 func class_for_weapon(w: String) -> String:
@@ -545,6 +577,11 @@ func run_start_weapons() -> Dictionary:
 
 func reset_run() -> void:
 	run_seed = forced_seed if forced_seed >= 0 else randi() % 1000000
+	if daily and forced_seed < 0:
+		run_seed = daily_seed()
+		# Spawns and drops draw from the global generator; seed it too so the
+		# day's rite opens the same way for everyone.
+		seed(run_seed)
 	run_stats = RunStats.new()
 	run_stats.run_seed = run_seed
 	mods.clear_all()
@@ -558,7 +595,7 @@ func reset_run() -> void:
 	weapons = run_start_weapons()
 	passives = {}
 	evolved = {}
-	stage = clampi(selected_stage, 0, STAGES.size() - 1)
+	stage = clampi(daily_stage() if daily else selected_stage, 0, STAGES.size() - 1)
 	boss_spawned = false
 	boss_alive = false
 	run_shards = 0
@@ -750,7 +787,7 @@ func end_run(victory: bool) -> void:
 	state = State.VICTORY if victory else State.GAMEOVER
 	# run_time restarts each stage, so a run's length is the stages already
 	# finished plus however far into the current one it ended.
-	var survived := float(selected_minutes) * 60.0 if victory \
+	var survived := float(run_minutes()) * 60.0 if victory \
 		else RUN_DURATION * float(stages_cleared) + run_time
 	best["time"] = maxf(float(best["time"]), survived)
 	best["kills"] = maxi(int(best["kills"]), kills)
@@ -764,6 +801,8 @@ func end_run(victory: bool) -> void:
 		run_shards += 10
 	refresh_achievements()
 	bank_run_shards()
+	if daily:
+		_record_daily(survived)
 	save_best()
 	run_ended.emit(victory)
 
@@ -891,6 +930,24 @@ func load_best() -> void:
 		best["kills"] = int(cfg.get_value("best", "kills", 0))
 		best["level"] = int(cfg.get_value("best", "level", 0))
 		best["wins"] = int(cfg.get_value("best", "wins", 0))
+		daily_best = {"date": str(cfg.get_value("daily", "date", "")),
+			"time": float(cfg.get_value("daily", "time", 0.0)),
+			"kills": int(cfg.get_value("daily", "kills", 0))}
+
+
+func _record_daily(survived: float) -> void:
+	var key := daily_key()
+	if str(daily_best.get("date", "")) != key:
+		daily_best = {"date": key, "time": 0.0, "kills": 0}
+	if survived > float(daily_best["time"]) or (survived == float(daily_best["time"]) and kills > int(daily_best["kills"])):
+		daily_best["time"] = survived
+		daily_best["kills"] = kills
+
+
+func daily_best_today() -> Dictionary:
+	if str(daily_best.get("date", "")) == daily_key():
+		return daily_best
+	return {}
 
 
 func save_best() -> void:
@@ -900,4 +957,8 @@ func save_best() -> void:
 	cfg.set_value("best", "kills", best["kills"])
 	cfg.set_value("best", "level", best["level"])
 	cfg.set_value("best", "wins", best["wins"])
+	if str(daily_best.get("date", "")) != "":
+		cfg.set_value("daily", "date", daily_best["date"])
+		cfg.set_value("daily", "time", daily_best["time"])
+		cfg.set_value("daily", "kills", daily_best["kills"])
 	cfg.save(SAVE_PATH)

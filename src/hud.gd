@@ -32,6 +32,18 @@ var indicators: Control
 var _heart_t := 0.0
 var lowhp: TextureRect
 var am = null
+var xp_glow: ColorRect
+var hp_text: Label
+var hint_label: Label
+var _hints: Array = []
+var _hint_t := 0.0
+var _hint_dur := 0.0
+var _last_xp := -1
+var _last_level := 1
+var _xp_flash := 0.0
+var _last_kills := 0
+var _kill_pop := 0.0
+const KILL_MILESTONES := [50, 100, 250, 500, 1000, 2000, 5000]
 
 
 func _ready() -> void:
@@ -54,16 +66,30 @@ func _ready() -> void:
 	lowhp.modulate.a = 0.0
 	add_child(lowhp)
 
-	xp_bar = _bar(Color(0.55, 0.35, 0.95), 18.0)
+	# The XP bar is the run's heartbeat: thick, bright and flashing on every
+	# gem, so progress reads at a glance on a phone held at arm's length.
+	xp_bar = _bar(Color(0.62, 0.42, 1.0), 26.0)
+	var xfg := xp_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	xfg.border_color = Color(0.85, 0.75, 1.0, 0.9)
+	xfg.border_width_bottom = 0
+	xfg.border_width_top = 3
+	xfg.shadow_color = Color(0.6, 0.35, 1.0, 0.55)
+	xfg.shadow_size = 8
 	xp_bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	xp_bar.offset_left = 10
-	xp_bar.offset_top = 8
+	xp_bar.offset_top = 6
 	xp_bar.offset_right = -10
-	xp_bar.offset_bottom = 28
+	xp_bar.offset_bottom = 32
 	add_child(xp_bar)
+	xp_glow = ColorRect.new()
+	xp_glow.color = Color(1.0, 0.95, 1.0, 0.0)
+	xp_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xp_glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	xp_bar.add_child(xp_glow)
 
-	level_label = _label(28, HORIZONTAL_ALIGNMENT_LEFT)
-	level_label.position = Vector2(16, 36)
+	level_label = _label(30, HORIZONTAL_ALIGNMENT_LEFT)
+	level_label.add_theme_color_override("font_color", Color(0.86, 0.76, 1.0))
+	level_label.position = Vector2(16, 38)
 	add_child(level_label)
 
 	timer_label = _label(46, HORIZONTAL_ALIGNMENT_CENTER)
@@ -139,13 +165,33 @@ func _ready() -> void:
 	boss_bar.visible = false
 	add_child(boss_bar)
 
-	hp_bar = _bar(Color(0.25, 0.9, 0.35), 22.0)
+	# The player already wears a health bar overhead; this one is the precise
+	# readout, so it can be slimmer and carry the number.
+	hp_bar = _bar(Color(0.86, 0.2, 0.22), 16.0)
 	hp_bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	hp_bar.offset_left = -220
-	hp_bar.offset_right = 220
-	hp_bar.offset_top = -66
-	hp_bar.offset_bottom = -42
+	hp_bar.offset_left = -170
+	hp_bar.offset_right = 170
+	hp_bar.offset_top = -52
+	hp_bar.offset_bottom = -34
 	add_child(hp_bar)
+	hp_text = _label(18, HORIZONTAL_ALIGNMENT_CENTER)
+	hp_text.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	hp_text.offset_left = -170
+	hp_text.offset_right = 170
+	hp_text.offset_top = -80
+	hp_text.offset_bottom = -54
+	hp_text.add_theme_color_override("font_color", Color(1.0, 0.78, 0.76))
+	add_child(hp_text)
+
+	hint_label = _label(26, HORIZONTAL_ALIGNMENT_CENTER)
+	hint_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	hint_label.offset_left = -340
+	hint_label.offset_right = 340
+	hint_label.offset_top = -250
+	hint_label.offset_bottom = -150
+	hint_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
+	hint_label.modulate.a = 0.0
+	add_child(hint_label)
 
 	warn_label = _label(40, HORIZONTAL_ALIGNMENT_CENTER)
 	warn_label.set_anchors_preset(Control.PRESET_CENTER)
@@ -279,6 +325,20 @@ func reset() -> void:
 	_card_t = 0.0
 	card_title.modulate.a = 0.0
 	card_text.modulate.a = 0.0
+	_hints.clear()
+	_hint_t = 0.0
+	hint_label.modulate.a = 0.0
+	_last_xp = -1
+	_last_level = 1
+	_xp_flash = 0.0
+	_last_kills = 0
+	_kill_pop = 0.0
+	kills_label.scale = Vector2.ONE
+
+
+# Queued one after another, each fading in and out over its own duration.
+func show_hint(text: String, dur: float) -> void:
+	_hints.append([text, dur])
 
 
 func set_run_visible(v: bool) -> void:
@@ -302,6 +362,7 @@ func hide_boss() -> void:
 
 
 func show_warning(text: String) -> void:
+	warn_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
 	warn_label.text = text
 	_warn_t = 3.0
 
@@ -337,9 +398,32 @@ func _process(delta: float) -> void:
 		card_title.modulate.a = a
 		card_text.modulate.a = a
 	_tick_objective()
+	_tick_hint(delta)
 	var need: int = gm.xp_needed()
-	xp_bar.value = 100.0 * float(gm.xp) / float(maxi(need, 1))
+	var target := 100.0 * float(gm.xp) / float(maxi(need, 1))
+	if gm.level != _last_level:
+		_last_level = gm.level
+		xp_bar.value = 0.0
+		_xp_flash = 1.0
+	elif gm.xp > _last_xp and _last_xp >= 0:
+		_xp_flash = maxf(_xp_flash, 0.45)
+	_last_xp = gm.xp
+	xp_bar.value = lerpf(xp_bar.value, target, minf(1.0, delta * 14.0))
+	_xp_flash = maxf(0.0, _xp_flash - delta * 3.0)
+	# Nearly full: a slow shimmer says the next power is one gem away.
+	var near := 0.18 * (0.5 + 0.5 * sin(Time.get_ticks_msec() / 140.0)) if target > 80.0 else 0.0
+	xp_glow.color.a = maxf(_xp_flash * 0.75, near)
 	level_label.text = "Lv %d" % gm.level
+	if gm.kills != _last_kills:
+		for m in KILL_MILESTONES:
+			if _last_kills < m and gm.kills >= m:
+				show_warning("%d SLAIN" % m)
+				warn_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+		_last_kills = gm.kills
+		_kill_pop = 1.0
+	_kill_pop = maxf(0.0, _kill_pop - delta * 6.0)
+	kills_label.pivot_offset = kills_label.size * Vector2(1.0, 0.5)
+	kills_label.scale = Vector2.ONE * (1.0 + 0.16 * _kill_pop)
 	var t: float = gm.run_time
 	timer_label.text = "%d:%02d" % [int(t) / 60, int(t) % 60]
 	kills_label.text = "%d slain" % gm.kills
@@ -350,9 +434,23 @@ func _process(delta: float) -> void:
 		var hp: float = player.get("hp")
 		var mhp: float = player.get("max_hp")
 		hp_bar.value = 100.0 * hp / maxf(mhp, 1.0)
+		hp_text.text = "%d / %d" % [ceili(maxf(hp, 0.0)), int(mhp)]
 		_tick_lowhp(delta, hp / maxf(mhp, 1.0), bool(player.get("alive")))
 	else:
 		lowhp.modulate.a = 0.0
+
+
+func _tick_hint(delta: float) -> void:
+	if _hint_t <= 0.0:
+		if _hints.is_empty():
+			hint_label.modulate.a = 0.0
+			return
+		var h: Array = _hints.pop_front()
+		hint_label.text = str(h[0])
+		_hint_dur = float(h[1])
+		_hint_t = _hint_dur
+	_hint_t -= delta
+	hint_label.modulate.a = clampf(minf(_hint_t, _hint_dur - _hint_t) * 2.5, 0.0, 1.0)
 
 
 func _tick_lowhp(delta: float, frac: float, alive: bool) -> void:

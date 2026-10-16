@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'build/web/**'
+      - 'web/og-image.png'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -33,6 +34,11 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
+      # The social preview card lives outside the export (Godot regenerates
+      # build/web/ wholesale), so it is copied in at publish time.
+      - name: Add social preview image
+        run: cp web/og-image.png build/web/og-image.png
 
       - name: Upload build/web
         uses: actions/upload-pages-artifact@v3

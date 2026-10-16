@@ -9,6 +9,9 @@ var stats_label: Label
 var report_label: Label
 var _restart_btn: Button
 var is_victory := false
+var share_btn: Button
+var _share_text := ""
+const GAME_URL := "https://outerheavenx.github.io/Grim-survivor/"
 
 
 func _ready() -> void:
@@ -49,6 +52,16 @@ func _ready() -> void:
 	rc.add_child(restart)
 	vb.add_child(rc)
 
+	share_btn = Button.new()
+	share_btn.text = "SHARE RESULT"
+	share_btn.custom_minimum_size = Vector2(420, 72)
+	share_btn.add_theme_font_size_override("font_size", 26)
+	share_btn.add_theme_color_override("font_color", Color(0.95, 0.7, 1.0))
+	share_btn.pressed.connect(_on_share)
+	var sc := CenterContainer.new()
+	sc.add_child(share_btn)
+	vb.add_child(sc)
+
 	var menu := Button.new()
 	menu.text = "TITLE"
 	menu.custom_minimum_size = Vector2(420, 80)
@@ -82,9 +95,34 @@ func show_screen(victory: bool, time: float, kills: int, level: int, shards_earn
 		int(time) / 60, int(time) % 60, kills, level, shards_earned,
 	]
 	report_label.text = report_text(stats) if stats else ""
+	var gm = get_node_or_null("/root/GameManager")
+	var head := "GRIM SURVIVORS"
+	if gm and gm.daily:
+		head = "GRIM SURVIVORS  -  Daily Rite %s" % gm.daily_key()
+		stats_label.text = "DAILY RITE  •  %s\n" % gm.daily_key() + stats_label.text
+	var where := ""
+	if gm:
+		where = " in %s" % str(gm.stage_data()["name"])
+	_share_text = "%s\n%s at %s%s  |  %d slain  |  Lv %d\nCan you outlast me? %s" % [
+		head, "Victorious" if victory else "Fell", _fmt_time(time), where, kills, level, GAME_URL]
+	share_btn.text = "SHARE RESULT"
 	visible = true
 	if _restart_btn:
 		_restart_btn.grab_focus()
+
+
+# On a phone the system share sheet; everywhere else the clipboard.
+func _on_share() -> void:
+	var shared := false
+	if OS.has_feature("web") and DisplayServer.is_touchscreen_available():
+		var js := "(function(t){if(navigator.share){navigator.share({text:t}).catch(function(){});return true;}return false;})(%s)" % JSON.stringify(_share_text)
+		shared = bool(JavaScriptBridge.eval(js, true))
+	if not shared:
+		DisplayServer.clipboard_set(_share_text)
+	share_btn.text = "SHARED" if shared else "COPIED TO CLIPBOARD"
+	var am = get_node_or_null("/root/AudioMan")
+	if am:
+		am.play("ui_click", -8.0)
 
 
 static func _fmt_num(v: float) -> String:

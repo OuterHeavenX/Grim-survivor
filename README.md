@@ -24,6 +24,19 @@ are bought with soul shards; the other nine are found — each stage hides a pai
 of relics for one weapon, and collecting both unlocks whoever wields it. Any
 weapon can also be carried in a two-slot loadout or picked up on level-up.
 
+**Getting in is one tap.** The title screen is an animated altar holding the
+selected survivor; BEGIN (CONTINUE after the first run) starts a run straight
+away with the remembered stage and length. The stage/length picker sits behind
+the descent button, and tapping the altar opens the survivor list. A first run
+gets two short on-screen hints, opens with a ring of weak foes so the weapon
+fires at once, and levels up within seconds (levels 1-4 need 3/6/10/16 XP,
+then the original 5 + 6n curve). Choosing an upgrade throws nearby enemies back.
+
+**The Daily Rite** is one stage and one seed per calendar day — the same for
+everyone — five minutes long, never touching campaign progress. The end screen
+can share a result line (system share sheet on phones, clipboard elsewhere),
+and today's best rite is shown on the title button.
+
 Six meta upgrade tracks bank across runs. Enemies scale with the stage, so later
 ground is harder ground. Targets both
 desktop and mobile web (portrait, 720×1280, on-screen joystick when a
@@ -151,7 +164,22 @@ does not measure rendering or the web build.
 godot --headless --path . --export-release "Web"
 ```
 
-Writes to `build/web/`. That directory carries a `.gdignore` so Godot does not
+Writes to `build/web/`. The preset uses two inputs from `web/` (which carries a
+`.gdignore`, so none of it is packed into the game):
+
+- `web/godot.web.template_release.wasm32.nothreads.zip` — a slim export
+  template: Godot 4.7.2 built with 3D, the advanced text server and every
+  module this game does not use compiled out. It halves the engine download
+  (wasm 39.5 MB → 20.3 MB; the whole page went from ~50 MB to ~27 MB).
+  Rebuild it with `tools/build_web_template.sh`; if the game starts using
+  something that script disables (3D nodes, RegEx, runtime SVG, networking…),
+  re-enable that module first.
+- `web/shell.html` — the page around the canvas: a branded loader with real
+  download progress and rotating tips, and an ENTER button that lifts the veil
+  once the game is running. That tap is the user gesture browsers require for
+  sound, so the altar's music starts with the reveal. It also carries the
+  social-preview meta tags; `web/og-image.png` is copied next to the export by
+  the Pages workflow. That directory carries a `.gdignore` so Godot does not
 import its own output back into the project — without it, the export sweeps
 copies of its own icons into the pack.
 
@@ -171,7 +199,9 @@ push to `main` that touches it, and can be run by hand from the Actions tab.
 It uploads the committed export as-is; nothing is compiled in CI, so it needs
 neither Godot nor the export templates.
 
-For this to do anything, **Pages must be set to deploy from GitHub Actions**:
+For this to do anything, **Pages must be set to deploy from GitHub Actions**
+(otherwise GitHub's own branch deployment publishes the repository root as
+well, and the two race):
 Settings → Pages → Build and deployment → Source → *GitHub Actions*. Left on
 "Deploy from a branch" the workflow runs and fails at the deploy step.
 

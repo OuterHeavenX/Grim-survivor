@@ -61,13 +61,25 @@ func _draw() -> void:
 		col = Color(0.45, 0.7, 1.0)
 	elif value >= 3:
 		col = Color(0.55, 1.0, 0.6)
-	var s := 7.0 + minf(float(value), 10.0)
-	draw_circle(Vector2(0, bob), s + 3.0, Color(col, 0.22))
+	var s := 8.0 + minf(float(value), 10.0)
+	# The ground is dark and busy, so a gem gets a breathing halo and a dark
+	# rim: it has to read as "pick me up" from across a phone screen.
+	var pulse := 0.5 + 0.5 * sin(_age * 4.0 + position.x * 0.01)
+	draw_circle(Vector2(0, bob), s + 9.0 + pulse * 3.0, Color(col, 0.10 + 0.08 * pulse))
+	draw_circle(Vector2(0, bob), s + 4.0, Color(col, 0.28))
+	var outer := PackedVector2Array([
+		Vector2(0, -s - 2.5 + bob), Vector2(s * 0.7 + 2.0, bob),
+		Vector2(0, s + 2.5 + bob), Vector2(-s * 0.7 - 2.0, bob),
+	])
+	draw_colored_polygon(outer, Color(0.02, 0.02, 0.05, 0.85))
 	draw_colored_polygon([
 		Vector2(0, -s + bob), Vector2(s * 0.7, bob),
 		Vector2(0, s + bob), Vector2(-s * 0.7, bob),
-	], col)
+	], col.lightened(0.15))
+	draw_colored_polygon([
+		Vector2(0, -s + bob), Vector2(s * 0.7, bob), Vector2(0, bob),
+	], col.lightened(0.45))
 	draw_colored_polygon([
 		Vector2(0, -s * 0.45 + bob), Vector2(s * 0.32, bob),
 		Vector2(0, s * 0.45 + bob), Vector2(-s * 0.32, bob),
-	], Color(1, 1, 1, 0.75))
+	], Color(1, 1, 1, 0.8))

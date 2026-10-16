@@ -2,8 +2,15 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
 		<title>Grim Survivors</title>
+		<meta name="description" content="A grimdark survivors-like for phone and desktop. Eight cursed stages, thirteen survivors, one more run.">
+		<meta name="theme-color" content="#07060a">
+		<meta property="og:type" content="website">
+		<meta property="og:title" content="Grim Survivors">
+		<meta property="og:description" content="A grimdark survivors-like. Eight cursed stages, thirteen survivors, a new Daily Rite every day. Plays in your browser.">
+		<meta property="og:image" content="https://outerheavenx.github.io/Grim-survivor/og-image.png">
+		<meta name="twitter:card" content="summary_large_image">
 		<style>
 html, body, #canvas {
 	margin: 0;
@@ -12,10 +19,11 @@ html, body, #canvas {
 }
 
 body {
-	color: white;
-	background-color: black;
+	color: #e8e0d0;
+	background-color: #07060a;
 	overflow: hidden;
 	touch-action: none;
+	font-family: Georgia, 'Times New Roman', serif;
 }
 
 #canvas {
@@ -26,68 +34,167 @@ body {
 	outline: none;
 }
 
-#status, #status-splash, #status-progress {
-	position: absolute;
-	left: 0;
-	right: 0;
-}
-
-#status, #status-splash {
-	top: 0;
-	bottom: 0;
-}
-
+/* Loader: everything here is local CSS, so it appears with the first byte. */
 #status {
-	background-color: #242424;
+	position: absolute;
+	inset: 0;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	visibility: hidden;
-}
-
-#status-splash {
-	max-height: 100%;
-	max-width: 100%;
-	margin: auto;
-}
-
-#status-splash.show-image--false {
-	display: none;
-}
-
-#status-splash.fullsize--true {
-	height: 100%;
-	width: 100%;
-	object-fit: contain;
-}
-
-#status-splash.use-filter--false {
-	image-rendering: pixelated;
-}
-
-#status-progress, #status-notice {
-	display: none;
-}
-
-#status-progress {
-	bottom: 10%;
-	width: 50%;
-	margin: 0 auto;
-}
-
-#status-notice {
-	background-color: #5b3943;
-	border-radius: 0.5rem;
-	border: 1px solid #9b3943;
-	color: #e0e0e0;
-	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
-	line-height: 1.3;
-	margin: 0 2rem;
-	overflow: hidden;
-	padding: 1rem;
+	gap: 1.4rem;
+	padding: 0 1.5rem;
+	background:
+		radial-gradient(ellipse at 50% 62%, rgba(150, 50, 18, 0.32), transparent 55%),
+		radial-gradient(ellipse at 50% 100%, rgba(80, 20, 10, 0.5), transparent 60%),
+		#07060a;
+	z-index: 2;
+	transition: opacity 0.6s ease;
 	text-align: center;
-	z-index: 1;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+#status.fade {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.sigil {
+	width: min(46vw, 210px);
+	aspect-ratio: 1;
+	border-radius: 50%;
+	border: 2px solid rgba(255, 140, 60, 0.55);
+	box-shadow: 0 0 40px rgba(255, 100, 30, 0.35), inset 0 0 30px rgba(255, 100, 30, 0.25);
+	position: relative;
+	animation: turn 24s linear infinite;
+}
+
+.sigil::before, .sigil::after {
+	content: '';
+	position: absolute;
+	inset: 12%;
+	border: 1px solid rgba(255, 170, 90, 0.4);
+	border-radius: 50%;
+}
+
+.sigil::after {
+	inset: 26%;
+	border: none;
+	background:
+		conic-gradient(from 0deg, transparent 0 8%, rgba(255, 140, 60, 0.6) 8% 9%, transparent 9% 28%,
+			rgba(255, 140, 60, 0.6) 28% 29%, transparent 29% 48%, rgba(255, 140, 60, 0.6) 48% 49%,
+			transparent 49% 68%, rgba(255, 140, 60, 0.6) 68% 69%, transparent 69% 88%,
+			rgba(255, 140, 60, 0.6) 88% 89%, transparent 89%);
+	-webkit-mask: radial-gradient(circle, transparent 40%, black 41%);
+	mask: radial-gradient(circle, transparent 40%, black 41%);
+}
+
+@keyframes turn {
+	to { transform: rotate(360deg); }
+}
+
+h1 {
+	margin: 0;
+	font-weight: normal;
+	letter-spacing: 0.22em;
+	font-size: clamp(1.8rem, 8vw, 3.2rem);
+	color: #efe6d4;
+	text-shadow: 0 0 18px rgba(255, 120, 40, 0.45), 0 2px 0 #000;
+}
+
+.sub {
+	margin-top: -0.9rem;
+	letter-spacing: 0.4em;
+	font-size: 0.8rem;
+	color: #a08c78;
+}
+
+#bar {
+	width: min(80vw, 380px);
+	height: 6px;
+	border-radius: 3px;
+	background: rgba(255, 255, 255, 0.08);
+	overflow: hidden;
+	box-shadow: 0 0 0 1px rgba(255, 140, 60, 0.25);
+}
+
+#fill {
+	height: 100%;
+	width: 0%;
+	background: linear-gradient(90deg, #7a2410, #ff8a3c, #ffd28a);
+	box-shadow: 0 0 12px rgba(255, 130, 50, 0.8);
+	transition: width 0.25s ease;
+}
+
+#label {
+	font-size: 0.85rem;
+	letter-spacing: 0.18em;
+	color: #b9a48e;
+	font-variant-numeric: tabular-nums;
+	min-height: 1.2em;
+}
+
+#tip {
+	max-width: 30rem;
+	font-style: italic;
+	color: #8c7e74;
+	font-size: 0.95rem;
+	min-height: 2.6em;
+	transition: opacity 0.5s ease;
+}
+
+#enter {
+	display: none;
+	font: inherit;
+	letter-spacing: 0.3em;
+	font-size: 1.15rem;
+	color: #ffd79a;
+	background: linear-gradient(#2a0f06, #160805);
+	border: 1px solid #c8662a;
+	border-radius: 10px;
+	padding: 1rem 2.4rem;
+	box-shadow: 0 0 24px rgba(255, 110, 40, 0.45);
+	cursor: pointer;
+	animation: breathe 2.2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+	50% { box-shadow: 0 0 40px rgba(255, 130, 50, 0.75); transform: scale(1.03); }
+}
+
+#notice {
+	display: none;
+	background-color: #3b1d23;
+	border: 1px solid #9b3943;
+	border-radius: 0.5rem;
+	color: #e0e0e0;
+	line-height: 1.4;
+	padding: 1rem;
+	max-width: 32rem;
+	font-family: system-ui, sans-serif;
+}
+
+.ember {
+	position: absolute;
+	bottom: -10px;
+	width: 4px;
+	height: 4px;
+	border-radius: 50%;
+	background: #ffb066;
+	box-shadow: 0 0 8px 2px rgba(255, 110, 40, 0.7);
+	animation: rise linear infinite;
+	opacity: 0;
+}
+
+@keyframes rise {
+	0% { transform: translate(0, 0); opacity: 0; }
+	10% { opacity: 0.9; }
+	100% { transform: translate(var(--drift), -105vh); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sigil, .ember, #enter { animation: none; }
 }
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
@@ -98,121 +205,162 @@ body {
 		<canvas id="canvas">
 			Your browser does not support the canvas tag.
 		</canvas>
-
 		<noscript>
-			Your browser does not support JavaScript.
+			Grim Survivors needs JavaScript to run.
 		</noscript>
-
 		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
-			<progress id="status-progress"></progress>
-			<div id="status-notice"></div>
+			<div class="sigil" aria-hidden="true"></div>
+			<h1>GRIM SURVIVORS</h1>
+			<div class="sub">THE ASH REMEMBERS</div>
+			<div id="bar"><div id="fill"></div></div>
+			<div id="label">SUMMONING&hellip;</div>
+			<button id="enter" type="button">ENTER THE ASH</button>
+			<div id="tip"></div>
+			<div id="notice"></div>
 		</div>
-
+		<script>
+// Remember every AudioContext the engine creates, so the ENTER tap (a user
+// gesture) can resume them and the altar's music starts with the reveal.
+(function () {
+	const Base = window.AudioContext || window.webkitAudioContext;
+	if (!Base) {
+		return;
+	}
+	window.__grimAudio = [];
+	class Tracked extends Base {
+		constructor(...args) {
+			super(...args);
+			window.__grimAudio.push(this);
+		}
+	}
+	window.AudioContext = Tracked;
+	if (window.webkitAudioContext) {
+		window.webkitAudioContext = Tracked;
+	}
+}());
+		</script>
 		<script src="index.js"></script>
 		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":9920916,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":7695888,"index.wasm":20304778},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
 (function () {
-	const statusOverlay = document.getElementById('status');
-	const statusProgress = document.getElementById('status-progress');
-	const statusNotice = document.getElementById('status-notice');
+	const status = document.getElementById('status');
+	const fill = document.getElementById('fill');
+	const label = document.getElementById('label');
+	const tip = document.getElementById('tip');
+	const enter = document.getElementById('enter');
+	const notice = document.getElementById('notice');
+	const bar = document.getElementById('bar');
 
-	let initializing = true;
-	let statusMode = '';
-
-	function setStatusMode(mode) {
-		if (statusMode === mode || !initializing) {
-			return;
+	const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	if (!reduced) {
+		for (let i = 0; i < 28; i++) {
+			const e = document.createElement('span');
+			e.className = 'ember';
+			e.style.left = (Math.random() * 100) + 'vw';
+			e.style.setProperty('--drift', ((Math.random() - 0.5) * 120) + 'px');
+			e.style.animationDuration = (6 + Math.random() * 8) + 's';
+			e.style.animationDelay = (-Math.random() * 14) + 's';
+			const s = 2 + Math.random() * 4;
+			e.style.width = e.style.height = s + 'px';
+			status.appendChild(e);
 		}
-		if (mode === 'hidden') {
-			statusOverlay.remove();
-			initializing = false;
-			return;
-		}
-		statusOverlay.style.visibility = 'visible';
-		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
-		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
-		statusMode = mode;
 	}
 
-	function setStatusNotice(text) {
-		while (statusNotice.lastChild) {
-			statusNotice.removeChild(statusNotice.lastChild);
-		}
-		const lines = text.split('\n');
-		lines.forEach((line) => {
-			statusNotice.appendChild(document.createTextNode(line));
-			statusNotice.appendChild(document.createElement('br'));
-		});
+	const tips = [
+		'Gems left on the ground are levels left unclaimed.',
+		'Cooled ash is safe. Glowing ash is not.',
+		'Every boss shows its blow before it lands. Watch the ground.',
+		'Two relics of one weapon free the survivor who wields it.',
+		'Choosing an upgrade throws the horde back. Breathe.',
+		'The Daily Rite is the same for everyone today.',
+		'Elites glow. They also drop chests.',
+	];
+	let tipIndex = Math.floor(Math.random() * tips.length);
+	function nextTip() {
+		tip.style.opacity = 0;
+		setTimeout(function () {
+			tip.textContent = tips[tipIndex % tips.length];
+			tipIndex += 1;
+			tip.style.opacity = 1;
+		}, 450);
 	}
+	nextTip();
+	const tipTimer = setInterval(nextTip, 4200);
 
-	function displayFailureNotice(err) {
+	function fail(err) {
 		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
-		} else {
-			setStatusNotice('An unknown error occurred.');
-		}
-		setStatusMode('notice');
-		initializing = false;
+		clearInterval(tipTimer);
+		notice.textContent = (err && err.message) ? err.message : String(err || 'An unknown error occurred.');
+		notice.style.display = 'block';
+		bar.style.display = 'none';
+		label.textContent = 'THE RITE FAILED';
 	}
 
-	const missing = Engine.getMissingFeatures({
-		threads: GODOT_THREADS_ENABLED,
-	});
+	function reveal() {
+		clearInterval(tipTimer);
+		status.classList.add('fade');
+		setTimeout(function () { status.remove(); }, 650);
+		const canvas = document.getElementById('canvas');
+		if (canvas) {
+			canvas.focus();
+		}
+	}
 
+	const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
 	if (missing.length !== 0) {
-		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
-			let serviceWorkerRegistrationPromise;
-			try {
-				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
-			} catch (err) {
-				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
-			}
-			// There's a chance that installing the service worker would fix the issue
-			Promise.race([
-				serviceWorkerRegistrationPromise.then((registration) => {
-					if (registration != null) {
-						return Promise.reject(new Error('Service worker already exists.'));
-					}
-					return registration;
-				}).then(() => engine.installServiceWorker()),
-				// For some reason, `getRegistration()` can stall
-				new Promise((resolve) => {
-					setTimeout(() => resolve(), 2000);
-				}),
-			]).then(() => {
-				// Reload if there was no error.
-				window.location.reload();
-			}).catch((err) => {
-				console.error('Error while registering service worker:', err);
-			});
-		} else {
-			// Display the message as usual
-			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
-			displayFailureNotice(missingMsg + missing.join('\n'));
-		}
-	} else {
-		setStatusMode('progress');
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
-				}
-			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
+		fail(new Error('This browser is missing features the game needs:\n' + missing.join('\n')));
+		return;
 	}
+
+	engine.startGame({
+		'onProgress': function (current, total) {
+			if (current > 0 && total > 0) {
+				const pct = Math.min(100, (current / total) * 100);
+				fill.style.width = pct + '%';
+				label.textContent = 'SUMMONING  ' + (current / 1048576).toFixed(1) + ' / ' + (total / 1048576).toFixed(1) + ' MB';
+			}
+		},
+	}).then(function () {
+		// The game is running behind the veil. Entering is a deliberate tap,
+		// which is also the gesture browsers require before sound may play.
+		fill.style.width = '100%';
+		bar.style.display = 'none';
+		label.textContent = 'THE ALTAR IS LIT';
+		enter.style.display = 'block';
+		enter.focus();
+	}, fail);
+
+	let entered = false;
+	function go(ev) {
+		if (ev) {
+			ev.preventDefault();
+		}
+		if (entered) {
+			return;
+		}
+		entered = true;
+		(window.__grimAudio || []).forEach(function (ctx) {
+			if (ctx.state !== 'running') {
+				ctx.resume();
+			}
+		});
+		reveal();
+	}
+	enter.addEventListener('click', go);
+	// While the veil is up the game is already running underneath; keep keys
+	// from reaching it, or Enter would start a run nobody can see.
+	window.addEventListener('keydown', function (ev) {
+		if (entered) {
+			return;
+		}
+		ev.stopPropagation();
+		if (enter.style.display === 'block' && (ev.key === 'Enter' || ev.key === ' ')) {
+			go(ev);
+		}
+	}, true);
 }());
 		</script>
 	</body>

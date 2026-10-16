@@ -104,6 +104,7 @@ func _make_sprite() -> void:
 	_spr.show_behind_parent = true
 	_tint = Color.WHITE
 	_spr.modulate = _tint
+	_spr.material = _outline_material()
 	add_child(_spr)
 
 
@@ -339,3 +340,16 @@ func _draw_health_bar(o: Vector2) -> void:
 	var hcol := Color(0.25, 0.9, 0.35).lerp(Color(0.95, 0.2, 0.2), 1.0 - frac)
 	draw_rect(Rect2(bar_pos, Vector2(w * frac, 8)), hcol)
 	draw_rect(Rect2(bar_pos, Vector2(w, 8)), Color(0, 0, 0, 0.6), false, 1.0)
+
+
+static var _outline_mat: ShaderMaterial = null
+
+
+# One material shared by every sprite of this kind, so they still batch.
+static func _outline_material() -> ShaderMaterial:
+	if _outline_mat == null:
+		_outline_mat = ShaderMaterial.new()
+		_outline_mat.shader = preload("res://src/fx/outline.gdshader")
+		_outline_mat.set_shader_parameter("outline_color", Color(1.0, 0.9, 0.62, 0.95))
+		_outline_mat.set_shader_parameter("width", 1.8)
+	return _outline_mat

@@ -51,9 +51,49 @@ func show_screen(choices: Array) -> void:
 		b.add_theme_font_size_override("font_size", 24)
 		b.text = _btn_text(ch)
 		b.pressed.connect(_on_pick.bind(ch))
+		_style_card(b, _accent(ch))
 		panel.add_child(b)
 		buttons.append(b)
 	visible = true
+	# Cards deal in one after another rather than appearing as a block.
+	for i in buttons.size():
+		var b: Button = buttons[i]
+		b.modulate.a = 0.0
+		b.position.x = 0.0
+		var tw := create_tween()
+		tw.tween_interval(0.06 * float(i))
+		tw.tween_property(b, "modulate:a", 1.0, 0.16)
+	if not buttons.is_empty():
+		buttons[0].grab_focus()
+
+
+# Evolutions gold, weapons ember, passives violet: what kind of power a card
+# offers reads before its text does.
+func _accent(ch: Dictionary) -> Color:
+	match str(ch.get("kind", "")):
+		"evolve":
+			return Color(1.0, 0.8, 0.3)
+		"weapon":
+			return Color(1.0, 0.5, 0.25)
+	return Color(0.7, 0.5, 1.0)
+
+
+func _style_card(b: Button, accent: Color) -> void:
+	for st in ["normal", "hover", "pressed", "focus"]:
+		var s := StyleBoxFlat.new()
+		s.set_corner_radius_all(12)
+		s.bg_color = Color(0.05, 0.045, 0.07, 0.96) if st == "normal" else Color(accent.darkened(0.78), 0.98)
+		s.border_color = Color(accent, 0.55) if st == "normal" else accent
+		s.set_border_width_all(2)
+		s.border_width_left = 8
+		s.shadow_color = Color(accent, 0.25 if st == "normal" else 0.5)
+		s.shadow_size = 6 if st == "normal" else 14
+		s.content_margin_left = 20
+		s.content_margin_right = 14
+		b.add_theme_stylebox_override(st, s)
+	b.add_theme_color_override("font_color", Color(0.93, 0.9, 0.86))
+	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	b.add_theme_color_override("font_focus_color", Color(1, 1, 1))
 
 
 func _btn_text(ch: Dictionary) -> String:
@@ -73,7 +113,7 @@ func _btn_text(ch: Dictionary) -> String:
 		var p: Dictionary = gm.PASSIVES[ch["id"]]
 		bname = str(p["name"])
 		desc = str(p["desc"])
-	return "[%s]  %s\n%s" % [tag, bname, desc]
+	return "%s   ·   %s\n%s" % [bname.to_upper(), tag, desc]
 
 
 func _on_pick(ch: Dictionary) -> void:
