@@ -38,7 +38,30 @@ everyone — five minutes long, never touching campaign progress. The end screen
 can share a result line (system share sheet on phones, clipboard elsewhere),
 and today's best rite is shown on the title button.
 
-Six meta upgrade tracks bank across runs. Enemies scale with the stage, so later
+**Companions.** Space, Q, a controller's Y or the sigil button on the HUD
+summons a spectral companion for a few seconds, then it recharges. The Grave
+Hound (fast melee) is free; the Bone Archer (piercing arrows) costs 150
+shards; the Ember Wisp (orbiting soulfire) comes with OATHKEEPER and the
+Wraith Knight (a tank that lures the horde and cleaves it) with the first
+victory. Pick one on the PACTS screen. Three Pact tracks make every companion
+hit harder, stay longer and return sooner, and a PACT card in the level-up
+pool does the same within a run — at level 5 the summon answers twice.
+
+**Stages have shapes and side missions.** Each stage is laid out differently:
+Ashen Hollow is a ruined keep with four gates, Throne of Cinders a colonnaded
+great hall, the Sunken Road a narrow canyon, the Bone Desert a wide open waste,
+the Drowned Reach broken piers, the Last Bastion a walled fortress. Ruins
+stop bodies (enemies slide around them) but not projectiles. From 30 s in, a
+stage offers timed missions one at a time — hold a shrine, cull the horde,
+slay a marked elite, catch a fleeing Soul Thief, cleanse three totems — each
+paying a chest, healing, shards, a gem sweep or an instant companion recharge.
+Between them the horde surges three times a stage.
+
+Fourteen meta upgrade tracks bank across runs. The original five power tracks
+ascend to rank 10; new ones cover damage taken, regeneration, weapon cooldown,
+shard gain, level-up rerolls and the three Pacts. Six new challenges (25
+summons, 10 missions, 3 Soul Thieves, 15 surges, 40 upgrade ranks, 10,000
+kills) unlock companions and three new sigils. Enemies scale with the stage, so later
 ground is harder ground. Targets both
 desktop and mobile web (portrait, 720×1280, on-screen joystick when a
 touchscreen is present).
@@ -153,6 +176,7 @@ The scripts in `test/` are harnesses that drive a live run and print
 | `test_bosses` | every boss phase and attack, warnings, budget, signatures, cleanup |
 | `test_interactions` | cross-weapon interactions, relics, proc limits, the altar |
 | `test_enemies` | the eight new enemy roles |
+| `test_pacts` | meta tracks and rerolls, stage layouts, all four companions, every mission, surges |
 | `test_run` | a full 30-minute campaign run to victory, save and title |
 
 `probe_balance` and `probe_perf` are measurements, not tests. `probe_perf`
