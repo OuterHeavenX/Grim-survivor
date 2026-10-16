@@ -14,5 +14,6 @@ Thumbs.db
 
 # Regenerable Blender intermediates and local verification output.
 art/civilians/renders/
+art/companions/renders/
 *.blend1
 civilian-*.log
