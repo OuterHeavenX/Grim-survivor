@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageRuleData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_rule_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/stage/rules/cinder_rule.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"furnace_court"
+impl = ExtResource("2")
+intro = "Furnaces fire heat lanes. Their backs bless."
+phase_times = PackedFloat32Array(60.0, 180.0, 260.0)
+grace = 8.0
+warn_time = 1.1
+max_hazards = 20
+min_safe_fraction = 0.45
+safe_reach = 230.0
+color = Color(1.0, 0.5, 0.15, 1.0)
+params = {"lane_length": 1500.0, "lane_width": 120.0, "active": 1.5, "recover": 0.6, "dmg": 14.0, "enemy_dmg": 30.0, "interval_0": 7.0, "interval_1": 6.5, "interval_2": 6.0, "elite_interval": 5.0, "boon_radius": 90.0, "boon_time": 6.0, "boon_max": 3, "boon_damage": 0.1, "boon_speed": 0.05, "standoff": 560.0, "decree_steps": 4, "decree_radius": 720.0, "decree_active": 1.4, "decree_gap": 3.2}

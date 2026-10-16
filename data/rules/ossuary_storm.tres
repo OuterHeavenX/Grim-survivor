@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageRuleData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_rule_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/stage/rules/desert_rule.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"ossuary_storm"
+impl = ExtResource("2")
+intro = "Storms blind you. Ribs give shelter."
+phase_times = PackedFloat32Array(60.0, 180.0, 255.0)
+grace = 8.0
+warn_time = 0.9
+max_hazards = 10
+min_safe_fraction = 0.45
+safe_reach = 230.0
+color = Color(0.95, 0.8, 0.45, 1.0)
+params = {"ribs": 10, "rib_length": 260.0, "rib_radius": 26.0, "shelter_depth": 230.0, "piles": 10, "pile_max": 5, "pile_xp": 2, "storm_every": 26.0, "storm_len": 9.0, "wind_light": 10.0, "wind_storm": 60.0, "player_push": 55.0, "pickup_push": 150.0, "storm_dark": 0.5, "necro_interval": 18.0, "necro_max": 3}

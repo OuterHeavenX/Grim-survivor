@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bosses/maw_of_the_mire.tres" id="2"]
+[ext_resource type="Script" path="res://src/data/stage_spawn_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/stage_event_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/rules/rising_mire.tres" id="5"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+enemy_id = &"cultist_healer"
+start_time = 45.0
+end_time = 295.0
+interval = 35.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+enemy_id = &"burrower"
+start_time = 100.0
+end_time = 295.0
+interval = 30.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("4")
+id = &"first_tide"
+time = 75.0
+banner = "THE TIDE RISES"
+duration = 11.0
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("4")
+id = &"mire_bloom"
+time = 255.0
+banner = "MIRE BLOOM"
+duration = 45.0
+
+[resource]
+script = ExtResource("1")
+id = &"weeping_marsh"
+display_name = "THE WEEPING MARSH"
+theme = "marsh"
+boss = ExtResource("2")
+enemy_pool = PackedStringArray("bogling", "wisp", "husk")
+special_enemies = Array[Resource]([SubResource("s1"), SubResource("s2")])
+relic_weapons = PackedStringArray("sdagger", "miasma")
+relic_tags = PackedStringArray("poison", "healing", "slow", "area")
+events = Array[Resource]([SubResource("s3"), SubResource("s4")])
+music_profile = "marsh"
+fog_tint = Color(0.35, 0.55, 0.4, 1.0)
+boss_aura = Color(0.35, 1.0, 0.45, 1.0)
+rule = ExtResource("5")

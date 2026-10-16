@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/rime_coffer.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"rime_coffer"
+display_name = "Rime Coffer"
+rarity = "rare"
+tags = PackedStringArray("cold")
+description = "Frozen foes take 25% more and shatter wider."
+modifiers = {}
+requires_weapons = PackedStringArray("frost")
+icon_color = Color(0.7, 0.9, 1, 1.0)
+discovered_by_default = false
+discover_stage = &"drowned_reach"
+effect = ExtResource("2")

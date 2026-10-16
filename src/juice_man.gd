@@ -126,7 +126,15 @@ func _process(delta: float) -> void:
 
 
 func add_trauma(a: float) -> void:
-	trauma = minf(1.0, trauma + a)
+	# Scaled by the screen-shake setting (0 turns it off entirely).
+	var gm = get_node_or_null("/root/GameManager")
+	var k: float = float(gm.setting("shake")) if gm else 1.0
+	trauma = minf(1.0, trauma + a * k)
+
+
+func reduced() -> bool:
+	var gm = get_node_or_null("/root/GameManager")
+	return gm != null and bool(gm.setting("reduced_effects"))
 
 
 
@@ -171,7 +179,7 @@ func death_fx(pos: Vector2, big: bool = false, etype: String = "", facing: float
 	if run == null:
 		return
 	var p := CPUParticles2D.new()
-	p.amount = 26 if big else 14
+	p.amount = (26 if big else 14) / (2 if reduced() else 1)
 	p.lifetime = 0.6
 	p.one_shot = true
 	p.explosiveness = 0.9
@@ -276,11 +284,15 @@ func shockwave(pos: Vector2, color: Color, max_r := 140.0) -> void:
 	var run = _run_node()
 	if run == null:
 		return
+	# Decorative rings are bounded; a hazard's own outline is the real signal.
+	if get_tree().get_nodes_in_group("shock_rings").size() >= (6 if reduced() else 16):
+		return
 	var r := ShockRing.new()
 	r.position = pos
 	r.ring_color = color
 	r.max_r = max_r
 	r.z_index = 44
+	r.add_to_group("shock_rings")
 	run.add_child(r)
 
 

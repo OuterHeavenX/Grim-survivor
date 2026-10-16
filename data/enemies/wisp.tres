@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"wisp"
+display_name = "Wisp"
+base_hp = 14.0
+base_damage = 7.0
+speed = 150.0
+xp_value = 2
+radius = 13.0
+walk_frames = 9
+tags = PackedStringArray("spirit", "flying")
+water_response = "ignore"
+drop_profile = "standard"
+is_boss = false

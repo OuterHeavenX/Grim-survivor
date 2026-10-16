@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"kings_brand"
+display_name = "King's Brand"
+rarity = "rare"
+tags = PackedStringArray("risk", "burn")
+description = "+35% damage, -25% max HP."
+modifiers = {"damage": 1.35, "max_hp": 0.75}
+requires_weapons = PackedStringArray()
+icon_color = Color(1, 0.3, 0.2, 1.0)
+discovered_by_default = true
+discover_stage = &""

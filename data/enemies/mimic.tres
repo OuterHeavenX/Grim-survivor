@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/mimic.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"mimic"
+display_name = "Mimic"
+base_hp = 160.0
+base_damage = 18.0
+speed = 230.0
+xp_value = 10
+radius = 24.0
+walk_frames = 0
+tags = PackedStringArray("fiend")
+water_response = "normal"
+drop_profile = "mimic"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"wake": 150.0, "reveal": 0.55, "chase": 7.0}

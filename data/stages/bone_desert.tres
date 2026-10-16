@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bosses/the_pale_herald.tres" id="2"]
+[ext_resource type="Script" path="res://src/data/stage_spawn_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/stage_event_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/rules/ossuary_storm.tres" id="5"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+enemy_id = &"necromancer"
+start_time = 180.0
+end_time = 295.0
+interval = 20.0
+max_alive = 3
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+enemy_id = &"burrower"
+start_time = 60.0
+end_time = 295.0
+interval = 40.0
+max_alive = 1
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("4")
+id = &"ossuary_storm"
+time = 255.0
+banner = "OSSUARY STORM"
+duration = 45.0
+
+[resource]
+script = ExtResource("1")
+id = &"bone_desert"
+display_name = "THE BONE DESERT"
+theme = "desert"
+boss = ExtResource("2")
+enemy_pool = PackedStringArray("skeleton", "imp", "mire")
+special_enemies = Array[Resource]([SubResource("s1"), SubResource("s2")])
+relic_weapons = PackedStringArray("comet", "scythe")
+relic_tags = PackedStringArray("piercing", "summon", "crit", "corpse")
+events = Array[Resource]([SubResource("s3")])
+music_profile = "desert"
+fog_tint = Color(0.7, 0.6, 0.38, 1.0)
+boss_aura = Color(1.0, 0.85, 0.5, 1.0)
+rule = ExtResource("5")

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"tide_lodestone"
+display_name = "Tide Lodestone"
+rarity = "common"
+tags = PackedStringArray("magnet", "pickup")
+description = "+60% pickup reach. Pickups resist currents."
+modifiers = {"magnet": 1.6}
+requires_weapons = PackedStringArray()
+icon_color = Color(0.45, 0.75, 1, 1.0)
+discovered_by_default = true
+discover_stage = &""

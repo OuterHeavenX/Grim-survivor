@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageRuleData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_rule_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/stage/rules/marsh_rule.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"rising_mire"
+impl = ExtResource("2")
+intro = "High water slows all but the islands."
+phase_times = PackedFloat32Array(75.0, 120.0, 255.0)
+grace = 8.0
+warn_time = 0.9
+max_hazards = 20
+min_safe_fraction = 0.45
+safe_reach = 230.0
+color = Color(0.35, 0.9, 0.55, 1.0)
+params = {"islands": 9, "island_radius": 150.0, "player_slow": 0.68, "enemy_slow": 0.82, "resist_slow": 0.93, "tide_warn": 3.0, "first_high": 8.0, "high_1": 12.0, "low_1": 16.0, "high_2": 15.0, "low_2": 13.0, "bloom_count": 6, "bloom_radius": 58.0, "bloom_player_dmg": 10.0, "bloom_enemy_dmg": 90.0, "bloom_blast": 130.0, "bloom_fuse": 0.7, "bloom_interval": 6.0}

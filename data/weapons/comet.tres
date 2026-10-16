@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"comet"
+display_name = "Comet Fall"
+description = "Calls down meteors on random foes after a warning flash."
+upgrade_description = "More meteors, bigger blasts."
+evolution_passive_id = &"might"
+evolution_name = "Starfall"
+evolution_description = "The sky itself falls on your enemies."

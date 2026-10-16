@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageRuleData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_rule_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/stage/rules/sunken_rule.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"the_procession"
+impl = ExtResource("2")
+intro = "Keep near the lantern convoy."
+phase_times = PackedFloat32Array(60.0, 180.0, 255.0)
+grace = 8.0
+warn_time = 0.9
+max_hazards = 12
+min_safe_fraction = 0.45
+safe_reach = 230.0
+color = Color(1.0, 0.8, 0.45, 1.0)
+params = {"convoy_speed": 9.0, "aura": 270.0, "aura_armor": 0.82, "dark": 0.55, "wait_dist": 900.0, "ahead_dist": 520.0, "ambush_cd": 18.0, "roadblocks": 2, "roadblock_timeout": 40.0, "wardens": 2, "shrines": 3, "bridge_time": 26.0, "bridge_radius": 170.0, "bridge_waves": 3, "wave_size": 5, "gate_radius": 680.0, "mimics": 1}

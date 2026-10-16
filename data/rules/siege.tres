@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageRuleData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_rule_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/stage/rules/bastion_rule.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"siege"
+impl = ExtResource("2")
+intro = "Light the wards. Defend them."
+phase_times = PackedFloat32Array(75.0, 180.0, 255.0)
+grace = 8.0
+warn_time = 0.95
+max_hazards = 20
+min_safe_fraction = 0.45
+safe_reach = 230.0
+color = Color(1.0, 0.6, 0.3, 1.0)
+params = {"ward_radius": 110.0, "ward_hp": 400.0, "ward_activate": 1.6, "ward_ring": 520.0, "portals": 3, "portal_ring": 560.0, "ward_bolt": 40.0, "ward_fire": 1.2, "legacy_interval": 4.5, "commander_interval": 22.0}

@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bosses/herald_of_vorgath.tres" id="2"]
+[ext_resource type="Script" path="res://src/data/stage_spawn_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/stage_event_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/rules/embers_beneath.tres" id="5"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+enemy_id = &"ranged_cultist"
+start_time = 60.0
+end_time = 295.0
+interval = 28.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+enemy_id = &"xp_leech"
+start_time = 90.0
+end_time = 295.0
+interval = 40.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("4")
+id = &"ashfall"
+time = 270.0
+banner = "ASHFALL"
+duration = 30.0
+
+[resource]
+script = ExtResource("1")
+id = &"ashen_hollow"
+display_name = "ASHEN HOLLOW"
+theme = "ashen"
+boss = ExtResource("2")
+enemy_pool = PackedStringArray("skeleton", "wisp", "husk")
+special_enemies = Array[Resource]([SubResource("s1"), SubResource("s2")])
+relic_weapons = PackedStringArray("lance", "frost")
+relic_tags = PackedStringArray("fire", "projectile", "retaliation")
+events = Array[Resource]([SubResource("s3")])
+music_profile = "ashen"
+fog_tint = Color(0.35, 0.45, 0.65, 1.0)
+boss_aura = Color(0.55, 0.3, 1.0, 1.0)
+rule = ExtResource("5")

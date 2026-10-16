@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/cinder_mantle.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"cinder_mantle"
+display_name = "Cinder Mantle"
+rarity = "rare"
+tags = PackedStringArray("fire", "retaliation")
+description = "When struck, burst into flame."
+modifiers = {}
+requires_weapons = PackedStringArray()
+icon_color = Color(1, 0.35, 0.1, 1.0)
+discovered_by_default = false
+discover_stage = &"ashen_hollow"
+effect = ExtResource("2")

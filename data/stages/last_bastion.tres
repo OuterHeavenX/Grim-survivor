@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bosses/the_ashen_sovereign.tres" id="2"]
+[ext_resource type="Script" path="res://src/data/stage_spawn_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/stage_event_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/rules/siege.tres" id="5"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+enemy_id = &"banner_carrier"
+start_time = 60.0
+end_time = 295.0
+interval = 40.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+enemy_id = &"cultist_healer"
+start_time = 90.0
+end_time = 295.0
+interval = 40.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("3")
+enemy_id = &"shield_bearer"
+start_time = 30.0
+end_time = 295.0
+interval = 35.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("4")
+id = &"final_siege"
+time = 255.0
+banner = "FINAL SIEGE"
+duration = 45.0
+
+[resource]
+script = ExtResource("1")
+id = &"last_bastion"
+display_name = "THE LAST BASTION"
+theme = "bastion"
+boss = ExtResource("2")
+enemy_pool = PackedStringArray("titan", "imp", "mire")
+special_enemies = Array[Resource]([SubResource("s1"), SubResource("s2"), SubResource("s3")])
+relic_weapons = PackedStringArray("fireball", "comet")
+relic_tags = PackedStringArray("legendary", "objective", "armor")
+events = Array[Resource]([SubResource("s4")])
+music_profile = "bastion"
+fog_tint = Color(0.6, 0.5, 0.4, 1.0)
+boss_aura = Color(1.0, 0.35, 0.12, 1.0)
+rule = ExtResource("5")

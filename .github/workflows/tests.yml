@@ -24,6 +24,7 @@ jobs:
           # the tests, and pulling them would dominate the job.
           sparse-checkout: |
             src
+            data
             test
             scenes
             tools

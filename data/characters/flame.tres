@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"flame"
+display_name = "Flamecaller"
+flavor = "Answers the horde with falling fire."
+unlock_rule = "relic"
+unlock_cost = 0
+starting_weapon = &"fireball"
+base_hp = 85.0
+damage_mult = 1.1
+speed_mult = 0.95
+magnet_mult = 1.0
+xp_mult = 1.0
+palette = {"cloak": Color(0.16, 0.06, 0.04, 1.0), "tunic": Color(0.6, 0.22, 0.08, 1.0), "lining": Color(0.95, 0.5, 0.12, 1.0), "eyes": Color(1.0, 0.7, 0.2, 1.0)}
+walk_sheet = "res://assets/sprites/player_flame_walk.png"
+portrait = "res://assets/sprites/player_flame_idle.png"

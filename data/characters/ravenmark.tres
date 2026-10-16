@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"ravenmark"
+display_name = "Ravenmark"
+flavor = "Sends the flock ahead to feed."
+unlock_rule = "relic"
+unlock_cost = 0
+starting_weapon = &"raven"
+base_hp = 85.0
+damage_mult = 0.95
+speed_mult = 1.1
+magnet_mult = 1.2
+xp_mult = 1.0
+palette = {"cloak": Color(0.05, 0.05, 0.08, 1.0), "tunic": Color(0.22, 0.2, 0.3, 1.0), "lining": Color(0.5, 0.45, 0.6, 1.0), "eyes": Color(0.9, 0.85, 0.4, 1.0)}
+walk_sheet = "res://assets/sprites/player_ravenmark_walk.png"
+portrait = "res://assets/sprites/player_ravenmark_idle.png"

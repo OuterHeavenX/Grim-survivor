@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"scythe"
+display_name = "Scythe Whirl"
+description = "A giant spectral scythe orbits you, dragging foes inward."
+upgrade_description = "Bigger scythe, harder hits, stronger pull."
+evolution_passive_id = &"siphon"
+evolution_name = "Reaper's Due"
+evolution_description = "A colossal scythe that harvests the horde's souls."

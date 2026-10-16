@@ -20,6 +20,12 @@ const BgScript := preload("res://src/bg.gd")
 const GroundScript := preload("res://src/ground.gd")
 const FogScript := preload("res://src/fog.gd")
 const HazardScript := preload("res://src/hazard.gd")
+const DirectorScript := preload("res://src/stage/stage_director.gd")
+const CombatScript := preload("res://src/combat/combat_rules.gd")
+const RelicsScript := preload("res://src/relics/relic_manager.gd")
+const ControllerScript := preload("res://src/boss/boss_controller.gd")
+const AltarScript := preload("res://src/relics/relic_altar.gd")
+const SettingsScript := preload("res://src/settings_ui.gd")
 
 const MAX_ENEMIES := 70
 # A hard ceiling for drifted-away pickups, in case a kill storm outruns the
@@ -51,6 +57,15 @@ var weapons_ui = null
 var fog_a: Node2D
 var fog_b: Node2D
 var ground: Node2D
+var settings_ui = null
+# Per-run systems, children of `run` so they die with it.
+var combat: CombatRules = null
+var relics: RelicManager = null
+# Per-stage: freed and rebuilt on every stage transition.
+var director: StageDirector = null
+# Recent deaths a necromancer may raise, oldest first: {pos, t, used}.
+var _corpses: Array = []
+const MAX_CORPSES := 16
 
 var intermission := 0.0
 var _ash: CPUParticles2D
@@ -154,6 +169,13 @@ func _ready() -> void:
 	add_child(weapons_ui)
 	weapons_ui.closed.connect(_on_weapons_closed)
 
+	settings_ui = SettingsScript.new()
+	add_child(settings_ui)
+	settings_ui.closed.connect(_on_settings_closed)
+	pause_menu.settings_pressed.connect(_on_settings_open)
+	title_screen.settings_pressed.connect(_on_settings_open)
+	_apply_effect_settings()
+
 	hud.pause_pressed.connect(_on_pause_button)
 	hud.set_run_visible(false)
 
@@ -166,11 +188,26 @@ func player_joy_wire() -> void:
 	pass
 
 
-func start_run() -> void:
-	am.play("ui_click", -8.0)
+func _teardown_run() -> void:
+	# Every exit from a run (restart, title, a new run after death or victory)
+	# goes through here, so stage and boss cleanup cannot be skipped.
+	if boss and is_instance_valid(boss) and boss.controller:
+		boss.controller.cleanup()
+	if director and is_instance_valid(director):
+		director.cleanup()
+	director = null
+	combat = null
+	relics = null
+	_corpses.clear()
+	gm.mods.clear_all()
 	if run:
 		run.queue_free()
 		run = null
+
+
+func start_run() -> void:
+	am.play("ui_click", -8.0)
+	_teardown_run()
 	boss = null
 	get_tree().paused = false
 	gm.reset_run()
@@ -183,6 +220,13 @@ func start_run() -> void:
 	run = Node2D.new()
 	run.name = "Run"
 	add_child(run)
+	combat = CombatScript.new()
+	combat.setup(self)
+	run.add_child(combat)
+	relics = RelicsScript.new()
+	relics.setup(self)
+	run.add_child(relics)
+	combat.relics = relics
 	player = PlayerScript.new()
 	player.position = Vector2.ZERO
 	player.died.connect(_on_player_died)
@@ -197,14 +241,13 @@ func start_run() -> void:
 	hud.reset()
 	hud.set_run_visible(true)
 	hud.hide_boss()
+	_begin_stage_director()
 	am.set_intense(false)
 
 
 func show_title() -> void:
 	am.play("ui_click", -8.0)
-	if run:
-		run.queue_free()
-		run = null
+	_teardown_run()
 	player = null
 	boss = null
 	get_tree().paused = false
@@ -215,6 +258,7 @@ func show_title() -> void:
 	levelup_ui.hide_screen()
 	loot_ui.hide_screen()
 	char_select.hide_screen()
+	settings_ui.hide_screen()
 	title_screen.show_screen()
 
 
@@ -229,10 +273,55 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		var k := (event as InputEventKey).keycode
 		if k == KEY_ESCAPE or k == KEY_P:
-			if gm.state == gm.State.RUNNING:
+			if settings_ui.visible:
+				_on_settings_closed()
+			elif gm.state == gm.State.RUNNING:
 				_on_pause_button()
 			elif gm.state == gm.State.PAUSED:
 				_on_resume()
+		elif OS.is_debug_build() and gm.state == gm.State.RUNNING:
+			_debug_key(k)
+	elif event is InputEventJoypadButton and event.pressed:
+		if (event as InputEventJoypadButton).button_index == JOY_BUTTON_START:
+			if gm.state == gm.State.RUNNING:
+				_on_pause_button()
+			elif gm.state == gm.State.PAUSED and not settings_ui.visible:
+				_on_resume()
+
+
+func _debug_key(k: int) -> void:
+	# Debug-build hooks for exercising stage content without playing to it.
+	#   F5 +30 s   F6 next event   F7 summon boss   F8 next boss phase
+	#   F9 clear stage hazards     F10 print director/boss state
+	match k:
+		KEY_F5:
+			if director:
+				director.debug_advance(30.0)
+		KEY_F6:
+			if director:
+				director.debug_trigger_event()
+		KEY_F7:
+			if not gm.boss_spawned:
+				gm.run_time = gm.RUN_DURATION - 0.05
+		KEY_F8:
+			if boss and is_instance_valid(boss) and boss.controller:
+				boss.controller.debug_set_phase(boss.controller.phase_idx + 1)
+		KEY_F9:
+			if director and director.rule:
+				director.rule.clear_stage_hazards()
+		KEY_F10:
+			print(debug_state())
+
+
+func debug_state() -> Dictionary:
+	var d := {"seed": gm.run_seed, "stage": gm.stage, "time": gm.run_time,
+		"hazards": get_tree().get_nodes_in_group("hazards").size(),
+		"enemies": _enemy_count()}
+	if director:
+		d["director"] = director.debug_state()
+	if boss and is_instance_valid(boss) and boss.controller:
+		d["boss"] = boss.controller.debug_state()
+	return d
 
 
 func _on_pause_button() -> void:
@@ -282,6 +371,10 @@ func _on_upgrade_chosen() -> void:
 
 func _on_player_died() -> void:
 	am.set_intense(false)
+	if boss and is_instance_valid(boss) and boss.controller:
+		boss.controller.cleanup()
+	if director:
+		director.cleanup()
 	gm.end_run(false)
 
 
@@ -347,6 +440,34 @@ func _loot_weapon_option():
 	return null
 
 
+func open_relic_altar(altar) -> void:
+	if gm.state != gm.State.RUNNING:
+		return
+	var tags: PackedStringArray = altar.tags
+	var opts: Array = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = gm.stage_rule_seed(gm.stage) + 77
+	for r in gm.roll_relics(tags, 3, rng):
+		var rd := r as RelicData
+		opts.append({"kind": "relic", "id": String(rd.id),
+			"name": "%s  [%s]" % [rd.display_name, rd.rarity.to_upper()],
+			"desc": rd.description})
+	if opts.is_empty():
+		# Every relic already held: the altar still pays out.
+		opts = [{"kind": "heal", "name": "Feast of Souls", "desc": "Restore 60% of max HP."},
+			{"kind": "shards", "name": "Shard Cache", "desc": "+25 soul shards, banked after the run."}]
+	gm.state = gm.State.CHEST
+	if player:
+		player.release_joystick()
+	get_tree().paused = true
+	am.duck(true)
+	am.play("chest_open", -4.0)
+	if gm.run_stats:
+		gm.run_stats.add_pickup("altars")
+	loot_ui.show_screen(opts, "RELIC ALTAR", "a relic for the road")
+	altar.queue_free()
+
+
 func _on_loot_chosen(choice: Dictionary) -> void:
 	am.play("ui_click", -10.0)
 	loot_ui.hide_screen()
@@ -372,6 +493,10 @@ func _apply_loot(choice: Dictionary) -> void:
 			_vacuum_all()
 		"revive":
 			gm.revives_left += 1
+		"relic":
+			if relics:
+				relics.add(str(choice["id"]))
+				hud.show_warning(str(choice["name"]).get_slice("  [", 0).to_upper())
 
 
 
@@ -396,7 +521,26 @@ func _on_run_ended(victory: bool) -> void:
 		am.play("victory_sting", -2.0)
 	else:
 		am.play("gameover_drone", -2.0)
-	end_screen.show_screen(victory, gm.run_time, gm.kills, gm.level, gm.last_banked)
+	end_screen.show_screen(victory, gm.run_time, gm.kills, gm.level, gm.last_banked, gm.run_stats)
+
+
+func _on_settings_open() -> void:
+	am.play("ui_click", -8.0)
+	settings_ui.show_screen()
+
+
+func _on_settings_closed() -> void:
+	am.play("ui_click", -8.0)
+	settings_ui.hide_screen()
+	_apply_effect_settings()
+	if gm.state == gm.State.PAUSED:
+		pause_menu.show_screen()
+
+
+func _apply_effect_settings() -> void:
+	if _ash:
+		_ash.emitting = not bool(gm.setting("reduced_effects"))
+		_ash.visible = _ash.emitting
 
 
 func _on_upgrades_open() -> void:
@@ -430,22 +574,8 @@ func _apply_stage_theme() -> void:
 	var sd: Dictionary = gm.stage_data()
 	if ground and ground.has_method("set_theme"):
 		ground.call("set_theme", str(sd["theme"]))
-	var fog_tint := Color(0.35, 0.45, 0.65)
-	match str(sd["theme"]):
-		"marsh":
-			fog_tint = Color(0.35, 0.55, 0.4)
-		"cinder":
-			fog_tint = Color(0.6, 0.35, 0.25)
-		"desert":
-			fog_tint = Color(0.7, 0.6, 0.38)
-		"barrens":
-			fog_tint = Color(0.55, 0.45, 0.32)
-		"grove":
-			fog_tint = Color(0.35, 0.6, 0.35)
-		"drowned":
-			fog_tint = Color(0.3, 0.45, 0.7)
-		"bastion":
-			fog_tint = Color(0.6, 0.5, 0.4)
+	var stage_def: StageData = gm.stage_def()
+	var fog_tint: Color = stage_def.fog_tint if stage_def else Color(0.35, 0.45, 0.65)
 	if fog_a:
 		fog_a.set("fog_color", Color(fog_tint, 0.05))
 	if fog_b:
@@ -466,19 +596,51 @@ func _advance_stage() -> void:
 	_elite_idx = 0
 	intermission = 5.0
 	hud.hide_boss()
-	for e in get_tree().get_nodes_in_group("enemies"):
-		jm.gold_burst(e.global_position)
+	if director and is_instance_valid(director):
+		director.cleanup()
+		director.queue_free()
+	director = null
+	_corpses.clear()
+	for e in get_tree().get_nodes_in_group("hostiles"):
+		if e.is_in_group("enemies"):
+			jm.gold_burst(e.global_position)
 		e.queue_free()
-	for group in ["gems", "shards", "relics", "hazards"]:
+	for group in ["gems", "shards", "relics", "hazards", "stage_objects", "boss_objects",
+			"pillars", "relic_altars", "fallen_banners", "objectives"]:
 		for n in get_tree().get_nodes_in_group(group):
 			n.queue_free()
 	if player:
 		player.heal(99999.0)
+		player.set("push", Vector2.ZERO)
 	_apply_stage_theme()
 	_spawn_relics()
 	var sd: Dictionary = gm.stage_data()
 	hud.show_warning("STAGE %d — %s" % [gm.stage + 1, str(sd["name"])])
 	am.play("victory_sting", -6.0)
+	_begin_stage_director()
+	_spawn_relic_altar()
+
+
+func _begin_stage_director() -> void:
+	director = DirectorScript.new()
+	run.add_child(director)
+	director.setup(self, gm.stage)
+	var sd: StageData = gm.stage_def()
+	if gm.run_stats:
+		gm.run_stats.begin_stage(gm.stage, sd.display_name if sd else "")
+	hud.show_card(sd.display_name if sd else "", director.intro_text())
+
+
+func _spawn_relic_altar() -> void:
+	# The reward for the boss just beaten waits at the start of the next
+	# stage: walking to it is the choice, so the run never stalls on a menu.
+	if player == null or gm.stages_cleared <= 0:
+		return
+	var prev: StageData = gm.CONTENT.stage_at((gm.stage - 1 + gm.STAGES.size()) % gm.STAGES.size())
+	var a = AltarScript.new()
+	a.position = clamp_arena(player.global_position + Vector2(0, -200))
+	a.tags = prev.relic_tags if prev else PackedStringArray()
+	run.add_child(a)
 
 
 func _physics_process(delta: float) -> void:
@@ -491,6 +653,8 @@ func _physics_process(delta: float) -> void:
 	else:
 		_spawner(delta)
 		_elite_schedule()
+	if director and is_instance_valid(director):
+		director.tick(delta)
 	_separation()
 	if player:
 		fog_a.position = player.position
@@ -530,6 +694,43 @@ func _ring_pos() -> Vector2:
 
 func _enemy_count() -> int:
 	return get_tree().get_nodes_in_group("enemies").size()
+
+
+func count_alive(etype: String) -> int:
+	var n := 0
+	for e in get_tree().get_nodes_in_group("hostiles"):
+		if String(e.etype) == etype and not e.dead:
+			n += 1
+	return n
+
+
+func clamp_arena(v: Vector2, margin := 0.0) -> Vector2:
+	var a := ARENA - margin
+	return Vector2(clampf(v.x, -a, a), clampf(v.y, -a, a))
+
+
+func add_hazard_node(h: Node2D) -> Node2D:
+	# Every TimedHazard enters the world here, under the shared cap.
+	_cap_group("hazards", MAX_HAZARDS)
+	run.add_child(h)
+	return h
+
+
+func claim_corpse(pos: Vector2, reach: float) -> Variant:
+	# Hands a necromancer the nearest unused recent corpse, once.
+	var now: float = gm.run_time
+	var best: Variant = null
+	var bd := reach
+	for c in _corpses:
+		if c["used"] or now - float(c["t"]) > 8.0:
+			continue
+		var d := pos.distance_to(c["pos"])
+		if d < bd:
+			bd = d
+			best = c
+	if best != null:
+		best["used"] = true
+	return best
 
 
 
@@ -617,8 +818,27 @@ func _spawn_boss() -> void:
 	gm.boss_spawned = true
 	gm.boss_alive = true
 	var sd: Dictionary = gm.stage_data()
+	var bd: BossData = gm.stage_def().boss_data() if gm.stage_def() else null
 	var e = _spawn_enemy(str(sd["boss"]), _ring_pos())
 	boss = e
+	if bd != null:
+		e.max_hp *= bd.hp_mult
+		e.hp = e.max_hp
+		e.tint = bd.tint
+		if not bd.legacy:
+			var ctl = ControllerScript.new()
+			e.add_child(ctl)
+			e.controller = ctl
+			ctl.setup(e, bd, self)
+			if bd.intro_text != "":
+				var t := get_tree().create_timer(2.4)
+				t.timeout.connect(func():
+					if hud and is_instance_valid(hud) and gm.boss_alive:
+						hud.show_warning(bd.intro_text.to_upper()))
+	if director and is_instance_valid(director):
+		director.on_boss(e)
+	if gm.run_stats:
+		gm.run_stats.boss_spawned(gm.run_time)
 	am.play("boss_warning_horn", -2.0)
 	am.play("boss_roar", -4.0, 0.9)
 	lm.attach_aura(e, sd["boss_aura"], 3.6, 1.0)
@@ -631,6 +851,17 @@ func _spawn_boss() -> void:
 
 
 func _on_enemy_died(e) -> void:
+	if gm.run_stats:
+		gm.run_stats.add_kill(str(e.etype), bool(e.get("is_elite")), e.is_boss())
+	if director and is_instance_valid(director):
+		director.on_enemy_died(e)
+	if not e.is_boss() and not bool(e.no_credit):
+		_corpses.append({"pos": e.global_position, "t": gm.run_time, "used": false})
+		if _corpses.size() > MAX_CORPSES:
+			_corpses.remove_at(0)
+	# Raised dead and boss props are not kills: no count, no siphon.
+	if bool(e.no_credit) or bool(e.revived):
+		return
 	gm.add_kill()
 	var sh: float = gm.siphon_heal()
 	if sh > 0.0 and player:
@@ -663,6 +894,20 @@ func _on_enemy_died(e) -> void:
 			var off := Vector2.from_angle(randf() * TAU) * randf_range(20.0, 70.0)
 			spawn_shard(e.global_position + off, 5)
 		gm.stages_cleared += 1
+		if gm.run_stats:
+			gm.run_stats.stage_cleared(gm.run_time)
+		var bd: BossData = gm.stage_def().boss_data() if gm.stage_def() else null
+		if bd and bd.defeat_text != "":
+			hud.show_warning(bd.defeat_text)
+		var stage_id := String(gm.stage_def().id) if gm.stage_def() else ""
+		var found: Array = gm.discover_stage_relics(stage_id)
+		for rid in found:
+			var rd: RelicData = gm.CONTENT.relic(rid)
+			_announce_unlocks(["RELIC: " + rd.display_name])
+		if stage_id == "last_bastion":
+			_crown_campaign()
+		if director and is_instance_valid(director):
+			director.cleanup()
 		# Campaign progress is banked the moment the stage falls, not at the end
 		# of the run: dying in stage 5 should not cost the player stages 1-4.
 		var freshly: Array = gm.clear_campaign_stage(gm.stage)
@@ -698,6 +943,19 @@ func _spawn_relics() -> void:
 		r.collected.connect(_on_relic_collected)
 		run.add_child(r)
 	_announce_relics(wname)
+
+
+func _crown_campaign() -> void:
+	# The last throne's reward is recognition, not power: a crown marker on
+	# the title screen, a large shard payout, and its legendary relic now in
+	# the altar pool (discovered just above).
+	if not gm.campaign:
+		return
+	gm.add_shards(100)
+	if not gm.campaign_crowned:
+		gm.campaign_crowned = true
+		gm.save_meta()
+		_announce_unlocks(["THE CAMPAIGN IS WON"])
 
 
 func _announce_unlocks(names: Array) -> void:
@@ -840,7 +1098,9 @@ func spawn_boom(pos: Vector2, radius: float) -> void:
 
 
 func spawn_damage_number(pos: Vector2, amount: float, color: Color) -> void:
-	if get_tree().get_nodes_in_group("dmgnums").size() > 40:
+	if not bool(gm.setting("damage_numbers")):
+		return
+	if get_tree().get_nodes_in_group("dmgnums").size() > (20 if bool(gm.setting("reduced_effects")) else 40):
 		return
 	var lbl := Label.new()
 	lbl.text = str(int(amount))

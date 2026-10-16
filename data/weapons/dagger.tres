@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"dagger"
+display_name = "Dagger Throw"
+description = "Hurls daggers at the nearest foe."
+upgrade_description = "More daggers, more damage."
+evolution_passive_id = &"might"
+evolution_name = "Fang Barrage"
+evolution_description = "Hurls five massive spectral fangs that shred whole lines."

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"pyro"
+display_name = "Pyromancer"
+flavor = "Frail, but everything burns."
+unlock_rule = "shards"
+unlock_cost = 200
+starting_weapon = &"ember"
+base_hp = 75.0
+damage_mult = 1.35
+speed_mult = 0.95
+magnet_mult = 1.0
+xp_mult = 1.0
+palette = {"cloak": Color(0.16, 0.05, 0.04, 1.0), "tunic": Color(0.55, 0.16, 0.05, 1.0), "lining": Color(0.95, 0.45, 0.1, 1.0), "eyes": Color(1.0, 0.65, 0.15, 1.0)}
+walk_sheet = "res://assets/sprites/player_pyro_walk.png"
+portrait = "res://assets/sprites/player_pyro_idle.png"

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"rime"
+display_name = "Rimewarden"
+flavor = "Stills the marsh with killing cold."
+unlock_rule = "relic"
+unlock_cost = 0
+starting_weapon = &"frost"
+base_hp = 110.0
+damage_mult = 0.9
+speed_mult = 0.92
+magnet_mult = 1.1
+xp_mult = 1.0
+palette = {"cloak": Color(0.05, 0.1, 0.16, 1.0), "tunic": Color(0.2, 0.45, 0.6, 1.0), "lining": Color(0.6, 0.9, 1.0, 1.0), "eyes": Color(0.7, 0.95, 1.0, 1.0)}
+walk_sheet = "res://assets/sprites/player_rime_walk.png"
+portrait = "res://assets/sprites/player_rime_idle.png"

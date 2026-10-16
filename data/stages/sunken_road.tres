@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bosses/warden_of_the_road.tres" id="2"]
+[ext_resource type="Script" path="res://src/data/stage_spawn_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/data/stage_event_data.gd" id="4"]
+[ext_resource type="Resource" path="res://data/rules/the_procession.tres" id="5"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+enemy_id = &"ranged_cultist"
+start_time = 60.0
+end_time = 295.0
+interval = 35.0
+max_alive = 2
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("4")
+id = &"broken_bridge"
+time = 255.0
+banner = "HOLD THE BRIDGE"
+duration = 45.0
+
+[resource]
+script = ExtResource("1")
+id = &"sunken_road"
+display_name = "THE SUNKEN ROAD"
+theme = "barrens"
+boss = ExtResource("2")
+enemy_pool = PackedStringArray("husk", "mire", "titan")
+special_enemies = Array[Resource]([SubResource("s1")])
+relic_weapons = PackedStringArray("bulwark", "lightning")
+relic_tags = PackedStringArray("armor", "movement", "knockback", "objective")
+events = Array[Resource]([SubResource("s2")])
+music_profile = "barrens"
+fog_tint = Color(0.55, 0.45, 0.32, 1.0)
+boss_aura = Color(0.9, 0.5, 0.25, 1.0)
+rule = ExtResource("5")

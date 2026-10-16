@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/plate.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"bone_plate"
+display_name = "Bone Plate"
+base_hp = 260.0
+base_damage = 0.0
+speed = 0.0
+xp_value = 0
+radius = 18.0
+walk_frames = 0
+tags = PackedStringArray("summon", "objective", "skeletal")
+water_response = "ignore"
+drop_profile = "none"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"orbit": 92.0, "spin": 1.1}

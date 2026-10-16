@@ -1,0 +1,150 @@
+[gd_resource type="Resource" script_class="BossData" load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://src/data/boss_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/boss_phase_data.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/boss_attack_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/boss/attacks/line_strikes.gd" id="4"]
+[ext_resource type="Script" path="res://src/boss/attacks/anchor_chain.gd" id="5"]
+[ext_resource type="Script" path="res://src/boss/attacks/eruption_marks.gd" id="6"]
+[ext_resource type="Script" path="res://src/boss/attacks/whirlpool.gd" id="7"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+id = &"water_jets"
+impl = ExtResource("4")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 5
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"count": 5, "pattern": "radial", "length": 820.0, "width": 52.0, "dmg": 1.0, "active": 0.5}
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+id = &"anchor_drop"
+impl = ExtResource("5")
+warn = 1.1
+cooldown = 0.0
+budget_cost = 3
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"anchors": 2, "chain_time": 4.0, "radius": 70.0, "dmg": 1.0, "chain_dmg": 0.35, "max_anchors": 4}
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("3")
+id = &"drowned_hands"
+impl = ExtResource("6")
+warn = 0.95
+cooldown = 0.0
+budget_cost = 5
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 5, "pattern": "ring_player", "spread": 150.0, "radius": 60.0, "dmg": 0.9, "linger": 0.0}
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("2")
+threshold = 1.0
+title = "I"
+banner = ""
+cadence = 1.0
+attacks = Array[Resource]([SubResource("s1"), SubResource("s2"), SubResource("s3")])
+passives = Array[Resource]([])
+
+[sub_resource type="Resource" id="s5"]
+script = ExtResource("3")
+id = &"water_jets"
+impl = ExtResource("4")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 5
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"count": 5, "pattern": "radial", "length": 820.0, "width": 52.0, "dmg": 1.0, "active": 0.5}
+
+[sub_resource type="Resource" id="s6"]
+script = ExtResource("3")
+id = &"anchor_drop"
+impl = ExtResource("5")
+warn = 1.1
+cooldown = 0.0
+budget_cost = 3
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"anchors": 2, "chain_time": 4.0, "radius": 70.0, "dmg": 1.0, "chain_dmg": 0.35, "max_anchors": 4}
+
+[sub_resource type="Resource" id="s7"]
+script = ExtResource("3")
+id = &"drowned_hands"
+impl = ExtResource("6")
+warn = 0.95
+cooldown = 0.0
+budget_cost = 5
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 5, "pattern": "ring_player", "spread": 150.0, "radius": 60.0, "dmg": 0.9, "linger": 0.0}
+
+[sub_resource type="Resource" id="s8"]
+script = ExtResource("3")
+id = &"whirlpool"
+impl = ExtResource("7")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = false
+passive = true
+params = {"pull": 95.0, "per_anchor": 25.0, "max_pull": 135.0, "core": 90.0, "dmg": 0.3, "lanes": 2, "lane_half": 0.45, "lane_rot": 0.35}
+
+[sub_resource type="Resource" id="s9"]
+script = ExtResource("2")
+threshold = 0.5
+title = "II"
+banner = "THE WHIRLPOOL OPENS"
+cadence = 0.9
+attacks = Array[Resource]([SubResource("s5"), SubResource("s6"), SubResource("s7")])
+passives = Array[Resource]([SubResource("s8")])
+
+[resource]
+script = ExtResource("1")
+id = &"the_drowned_maw"
+display_name = "THE DROWNED MAW"
+base_enemy = &"maw"
+hp_mult = 1.0
+aura = Color(0.4, 0.75, 1.0, 1.0)
+tint = Color(0.7, 0.85, 1.0, 1.0)
+phases = Array[Resource]([SubResource("s4"), SubResource("s9")])
+cast_gap = 5.4
+min_cast_gap = 2.4
+enrage_threshold = 0.3
+enrage_cadence = 0.75
+final_stand_threshold = 0.0
+final_stand_cadence = 0.85
+max_hazards = 20
+min_safe_fraction = 0.35
+min_warn = 0.65
+summon_enemy = &"wisp"
+summon_interval = 9.0
+summon_count = 2
+reward_tags = PackedStringArray("magnet", "chain", "cold", "pickup")
+intro_text = "The tide comes for you."
+defeat_text = "THE REACH GROWS CALM"

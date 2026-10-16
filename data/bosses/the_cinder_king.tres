@@ -1,0 +1,151 @@
+[gd_resource type="Resource" script_class="BossData" load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://src/data/boss_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/boss_phase_data.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/boss_attack_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/boss/attacks/radial_volley.gd" id="4"]
+[ext_resource type="Script" path="res://src/boss/attacks/furnace_command.gd" id="5"]
+[ext_resource type="Script" path="res://src/boss/attacks/eruption_marks.gd" id="6"]
+[ext_resource type="Script" path="res://src/boss/attacks/arena_quadrants.gd" id="7"]
+[ext_resource type="Script" path="res://src/boss/attacks/flame_trail.gd" id="8"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+id = &"sword_wave"
+impl = ExtResource("4")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 7
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"count": 7, "count_enraged": 9, "speed": 260.0, "dmg": 0.8, "arc": 1.15, "aimed": true, "radius": 14.0, "life": 3.0}
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+id = &"furnace_command"
+impl = ExtResource("5")
+warn = 1.1
+cooldown = 0.0
+budget_cost = 2
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"count": 2}
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("3")
+id = &"meteor_marks"
+impl = ExtResource("6")
+warn = 1.2
+cooldown = 0.0
+budget_cost = 5
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 5, "pattern": "scatter", "spread": 260.0, "radius": 80.0, "dmg": 1.1, "linger": 0.0}
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("2")
+threshold = 1.0
+title = "I"
+banner = ""
+cadence = 1.0
+attacks = Array[Resource]([SubResource("s1"), SubResource("s2"), SubResource("s3")])
+passives = Array[Resource]([])
+
+[sub_resource type="Resource" id="s5"]
+script = ExtResource("3")
+id = &"decree_pattern"
+impl = ExtResource("7")
+warn = 1.2
+cooldown = 0.0
+budget_cost = 3
+weight = 1.0
+major = true
+movement_pressure = false
+positional = true
+passive = false
+params = {"radius": 760.0, "steps": 2, "active": 1.1, "recovery": 2.6, "vulnerable": 1.5, "dmg": 1.0}
+
+[sub_resource type="Resource" id="s6"]
+script = ExtResource("3")
+id = &"sword_wave"
+impl = ExtResource("4")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 9
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"count": 9, "count_enraged": 9, "speed": 260.0, "dmg": 0.8, "arc": 1.3, "aimed": true, "radius": 14.0, "life": 3.0}
+
+[sub_resource type="Resource" id="s7"]
+script = ExtResource("3")
+id = &"meteor_marks"
+impl = ExtResource("6")
+warn = 1.1
+cooldown = 0.0
+budget_cost = 5
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 5, "pattern": "scatter", "spread": 260.0, "radius": 80.0, "dmg": 1.1, "linger": 0.0}
+
+[sub_resource type="Resource" id="s8"]
+script = ExtResource("3")
+id = &"flame_trail"
+impl = ExtResource("8")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = false
+passive = true
+params = {"interval": 0.4, "radius": 46.0, "life": 2.2, "dmg": 0.25, "max_trail": 8}
+
+[sub_resource type="Resource" id="s9"]
+script = ExtResource("2")
+threshold = 0.5
+title = "II"
+banner = "THE CROWN IGNITES"
+cadence = 0.85
+attacks = Array[Resource]([SubResource("s5"), SubResource("s6"), SubResource("s7")])
+passives = Array[Resource]([SubResource("s8")])
+
+[resource]
+script = ExtResource("1")
+id = &"the_cinder_king"
+display_name = "THE CINDER KING"
+base_enemy = &"cinderking"
+hp_mult = 1.0
+aura = Color(1.0, 0.45, 0.15, 1.0)
+tint = Color(1.0, 1.0, 1.0, 1.0)
+phases = Array[Resource]([SubResource("s4"), SubResource("s9")])
+cast_gap = 5.0
+min_cast_gap = 2.2
+enrage_threshold = 0.3
+enrage_cadence = 0.75
+final_stand_threshold = 0.0
+final_stand_cadence = 0.85
+max_hazards = 22
+min_safe_fraction = 0.35
+min_warn = 0.65
+summon_enemy = &"imp"
+summon_interval = 9.0
+summon_count = 2
+reward_tags = PackedStringArray("burn", "explosion", "cooldown", "risk")
+intro_text = "Kneel to the furnace."
+defeat_text = "THE KING'S FIRE DIES"

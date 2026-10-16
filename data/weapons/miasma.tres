@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"miasma"
+display_name = "Plague Miasma"
+description = "Drops a toxic cloud on the horde that melts foes over time."
+upgrade_description = "Bigger cloud, longer linger, harder ticks."
+evolution_passive_id = &"haste"
+evolution_name = "Blight Epidemic"
+evolution_description = "A vast plague cloud that consumes the horde."

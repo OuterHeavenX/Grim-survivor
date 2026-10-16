@@ -55,6 +55,14 @@ var _anim_t := 0.0
 var _hurt_flash := 0.0
 var _invuln := 0.0
 
+# External forces stage rules and bosses apply this frame (currents, wind,
+# a tether, a whirlpool). They add to walking rather than replacing it, and
+# the total is capped below walking speed so input always wins.
+var push := Vector2.ZERO
+const MAX_PUSH_SHARE := 0.6
+# Left stick dead zone for controllers.
+const STICK_DEADZONE := 0.22
+
 
 func _ready() -> void:
 	add_to_group("player")
@@ -167,14 +175,25 @@ func _physics_process(delta: float) -> void:
 		var drag := _touch_cur - _touch_origin
 		if drag.length() > 14.0:
 			jv = drag.limit_length(90.0) / 90.0
-	move_vec = kv + jv
+	var sv := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
+	if sv.length() < STICK_DEADZONE:
+		sv = Vector2.ZERO
+	move_vec = kv + jv + sv
 	if move_vec.length() > 1.0:
 		move_vec = move_vec.normalized()
 	var gm = get_node("/root/GameManager")
-	velocity = move_vec * BASE_SPEED * gm.speed_mult()
+	var walk: float = BASE_SPEED * gm.speed_mult()
+	velocity = move_vec * walk + push.limit_length(walk * MAX_PUSH_SHARE)
+	push = Vector2.ZERO
 	move_and_slide()
 	position.x = clampf(position.x, -ARENA, ARENA)
 	position.y = clampf(position.y, -ARENA, ARENA)
+	var main = get_tree().get_first_node_in_group("main")
+	if main and main.director and is_instance_valid(main.director) and not main.director.obstacles.is_empty():
+		position = main.director.resolve(position, 16.0)
+	var regen: float = gm.mods.add("regen")
+	if regen > 0.0 and hp < max_hp:
+		heal(regen * delta)
 	if joy_ui:
 		joy_ui.set_joy(_touch_id != -1, _touch_origin, _touch_cur)
 	if _spr != null:
@@ -202,11 +221,22 @@ func magnet_radius() -> float:
 	return BASE_MAGNET * gm.magnet_mult()
 
 
-func take_damage(amount: float) -> void:
+func add_push(v: Vector2) -> void:
+	push += v
+
+
+func take_damage(amount: float, source := "") -> void:
 	if not alive or _invuln > 0.0:
 		return
 	var gm = get_node("/root/GameManager")
-	hp -= maxf(1.0, amount - gm.armor_block())
+	var taken := maxf(1.0, amount * gm.mods.mult("damage_taken") - gm.armor_block())
+	taken = minf(taken, maxf(hp, 0.0))
+	hp -= taken
+	if gm.run_stats:
+		gm.run_stats.add_damage_taken(source, taken)
+	var main = get_tree().get_first_node_in_group("main")
+	if main and main.get("combat"):
+		main.combat.on_player_hit(taken, source)
 	_hurt_flash = 0.12
 	modulate = Color(1.7, 0.45, 0.45)
 	hp_changed.emit(hp, max_hp)
@@ -246,7 +276,11 @@ func _revive() -> void:
 func heal(amount: float) -> void:
 	if not alive:
 		return
+	var before := hp
 	hp = minf(max_hp, hp + amount)
+	var gm = get_node("/root/GameManager")
+	if gm.run_stats:
+		gm.run_stats.add_healing(hp - before)
 	hp_changed.emit(hp, max_hp)
 
 

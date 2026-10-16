@@ -15,7 +15,8 @@ set -uo pipefail
 
 cd "$(dirname "$0")/.."
 GODOT="${GODOT:-godot}"
-SUITES=(test_chars test_elite test_gear test_joy test_stages test_ui)
+SUITES=(test_chars test_elite test_gear test_joy test_stages test_ui
+	test_content test_stage_rules test_bosses test_interactions test_enemies test_run)
 BACKUP="$(mktemp)"
 cp project.godot "$BACKUP"
 restore() { cp "$BACKUP" project.godot; rm -f "$BACKUP"; }
@@ -38,7 +39,7 @@ assert "[autoload]\n\n" in s, "no [autoload] section in project.godot"
 open(p, "w").write(s.replace("[autoload]\n\n",
     '[autoload]\n\nTestRunner="*res://test/%s.gd"\n' % suite, 1))
 PY
-	out="$(timeout 300 "$GODOT" --headless --path . --quit-after 2000 2>&1)"
+	out="$(timeout 600 "$GODOT" --headless --path . --quit-after 8000 2>&1)"
 	pass=$(printf '%s\n' "$out" | grep -c '^PASS: ')
 	fail=$(printf '%s\n' "$out" | grep -c '^FAIL: ')
 	total_pass=$((total_pass + pass))

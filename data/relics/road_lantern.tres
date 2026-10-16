@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"road_lantern"
+display_name = "Road Lantern"
+rarity = "common"
+tags = PackedStringArray("objective")
+description = "Objectives fill 40% faster."
+modifiers = {"objective_speed": 1.4}
+requires_weapons = PackedStringArray()
+icon_color = Color(1, 0.85, 0.45, 1.0)
+discovered_by_default = true
+discover_stage = &""

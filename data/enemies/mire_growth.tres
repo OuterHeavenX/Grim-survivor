@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/growth.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"mire_growth"
+display_name = "Mire Growth"
+base_hp = 160.0
+base_damage = 0.0
+speed = 0.0
+xp_value = 0
+radius = 22.0
+walk_frames = 0
+tags = PackedStringArray("summon", "objective", "bog")
+water_response = "ignore"
+drop_profile = "none"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"heal_frac": 0.012}

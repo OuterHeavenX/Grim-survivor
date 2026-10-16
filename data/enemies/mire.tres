@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"mire"
+display_name = "Mire Brute"
+base_hp = 130.0
+base_damage = 17.0
+speed = 50.0
+xp_value = 5
+radius = 28.0
+walk_frames = 9
+tags = PackedStringArray("bog", "heavy")
+water_response = "ignore"
+drop_profile = "standard"
+is_boss = false

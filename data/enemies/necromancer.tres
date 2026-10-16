@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/necromancer.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"necromancer"
+display_name = "Necromancer"
+base_hp = 55.0
+base_damage = 8.0
+speed = 80.0
+xp_value = 5
+radius = 16.0
+walk_frames = 0
+tags = PackedStringArray("cultist", "support")
+water_response = "normal"
+drop_profile = "standard"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"channel": 1.6, "raise": 2, "cooldown": 6.0, "max_revived": 10}

@@ -40,6 +40,8 @@ func _physics_process(delta: float) -> void:
 		vel = d.normalized() * 720.0 if dist > 1.0 else Vector2.ZERO
 	if dist < 28.0:
 		gm.add_shards(value)
+		if gm.run_stats:
+			gm.run_stats.add_pickup("shards", value)
 		get_node("/root/AudioMan").play_shard()
 		get_node("/root/JuiceMan").shard_sparkle(global_position)
 		queue_free()

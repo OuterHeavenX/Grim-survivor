@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"skeleton"
+display_name = "Skeleton"
+base_hp = 22.0
+base_damage = 9.0
+speed = 125.0
+xp_value = 1
+radius = 16.0
+walk_frames = 9
+tags = PackedStringArray("skeletal")
+water_response = "normal"
+drop_profile = "standard"
+is_boss = false

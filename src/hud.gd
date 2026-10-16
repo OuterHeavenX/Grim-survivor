@@ -4,6 +4,7 @@ extends CanvasLayer
 signal pause_pressed
 
 const JoystickScript := preload("res://src/joystick_ui.gd")
+const IndicatorScript := preload("res://src/offscreen_indicators.gd")
 
 var gm = null
 var player = null
@@ -22,6 +23,12 @@ var joy = null
 var pause_btn: Button
 
 var _warn_t := 0.0
+var card_title: Label
+var card_text: Label
+var _card_t := 0.0
+var objective_label: Label
+var objective_bar: ProgressBar
+var indicators: Control
 var _heart_t := 0.0
 var lowhp: TextureRect
 var am = null
@@ -149,6 +156,46 @@ func _ready() -> void:
 	warn_label.modulate.a = 0.0
 	add_child(warn_label)
 
+	# Stage card: the stage's name and its rule in one line, shown on entry
+	# without pausing anything.
+	card_title = _label(40, HORIZONTAL_ALIGNMENT_CENTER)
+	card_title.set_anchors_preset(Control.PRESET_CENTER)
+	card_title.offset_left = -340
+	card_title.offset_right = 340
+	card_title.offset_top = -400
+	card_title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.5))
+	card_title.modulate.a = 0.0
+	add_child(card_title)
+	card_text = _label(26, HORIZONTAL_ALIGNMENT_CENTER)
+	card_text.set_anchors_preset(Control.PRESET_CENTER)
+	card_text.offset_left = -340
+	card_text.offset_right = 340
+	card_text.offset_top = -350
+	card_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	card_text.modulate.a = 0.0
+	add_child(card_text)
+
+	objective_label = _label(22, HORIZONTAL_ALIGNMENT_CENTER)
+	objective_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	objective_label.offset_left = -300
+	objective_label.offset_right = 300
+	objective_label.offset_top = 164
+	objective_label.offset_bottom = 192
+	objective_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.55))
+	objective_label.visible = false
+	add_child(objective_label)
+	objective_bar = _bar(Color(1.0, 0.82, 0.4), 10.0)
+	objective_bar.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	objective_bar.offset_left = -200
+	objective_bar.offset_right = 200
+	objective_bar.offset_top = 194
+	objective_bar.offset_bottom = 204
+	objective_bar.visible = false
+	add_child(objective_bar)
+
+	indicators = IndicatorScript.new()
+	add_child(indicators)
+
 	joy = JoystickScript.new()
 	add_child(joy)
 
@@ -229,6 +276,9 @@ func reset() -> void:
 	warn_label.modulate.a = 0.0
 	lowhp.modulate.a = 0.0
 	_heart_t = 0.0
+	_card_t = 0.0
+	card_title.modulate.a = 0.0
+	card_text.modulate.a = 0.0
 
 
 func set_run_visible(v: bool) -> void:
@@ -256,12 +306,37 @@ func show_warning(text: String) -> void:
 	_warn_t = 3.0
 
 
+func show_card(title: String, text: String) -> void:
+	card_title.text = title
+	card_text.text = text
+	_card_t = 4.5
+
+
+func _tick_objective() -> void:
+	var obj = null
+	for o in get_tree().get_nodes_in_group("objectives"):
+		if o.has_method("is_active") and o.is_active():
+			obj = o
+			break
+	objective_label.visible = obj != null
+	objective_bar.visible = obj != null
+	if obj:
+		objective_label.text = obj.hud_text()
+		objective_bar.value = 100.0 * obj.frac()
+
+
 func _process(delta: float) -> void:
 	if not visible:
 		return
 	if _warn_t > 0.0:
 		_warn_t -= delta
 		warn_label.modulate.a = clampf(_warn_t, 0.0, 1.0)
+	if _card_t > 0.0:
+		_card_t -= delta
+		var a := clampf(minf(_card_t, 4.5 - _card_t) * 2.0, 0.0, 1.0)
+		card_title.modulate.a = a
+		card_text.modulate.a = a
+	_tick_objective()
 	var need: int = gm.xp_needed()
 	xp_bar.value = 100.0 * float(gm.xp) / float(maxi(need, 1))
 	level_label.text = "Lv %d" % gm.level

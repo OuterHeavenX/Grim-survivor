@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/healer.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"cultist_healer"
+display_name = "Cultist Healer"
+base_hp = 40.0
+base_damage = 6.0
+speed = 95.0
+xp_value = 4
+radius = 15.0
+walk_frames = 0
+tags = PackedStringArray("cultist", "support")
+water_response = "normal"
+drop_profile = "standard"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"range": 320.0, "heal_frac": 0.06, "break_frac": 0.15, "keep_away": 260.0, "max_heal_mult": 3.0}

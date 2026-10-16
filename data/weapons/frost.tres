@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"frost"
+display_name = "Frost Nova"
+description = "A freezing ring that chills nearby foes."
+upgrade_description = "Wider ring, longer chill."
+evolution_passive_id = &"haste"
+evolution_name = "Glacial Tempest"
+evolution_description = "A vast freezing storm that never lets foes escape."

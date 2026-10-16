@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageRuleData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_rule_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/stage/rules/ashen_rule.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"embers_beneath"
+impl = ExtResource("2")
+intro = "Cinder scars erupt. Cooled ash is safe."
+phase_times = PackedFloat32Array(60.0, 180.0, 270.0)
+grace = 8.0
+warn_time = 0.95
+max_hazards = 26
+min_safe_fraction = 0.45
+safe_reach = 230.0
+color = Color(1.0, 0.42, 0.12, 1.0)
+params = {"crack_time": 0.6, "active": 0.35, "recover": 0.3, "cooled": 6.0, "radius": 70.0, "dmg": 16.0, "enemy_dmg": 40.0, "interval_0": 3.4, "interval_1": 2.6, "interval_2": 3.2, "interval_3": 1.8, "band_width": 110.0, "band_gap": 185.0, "lead": 0.55, "ash_dark": 0.45}

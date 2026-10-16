@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/iron_greaves.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"iron_greaves"
+display_name = "Iron Greaves"
+rarity = "common"
+tags = PackedStringArray("armor", "movement")
+description = "+2 armour. Swift while healthy."
+modifiers = {"armor": 2.0}
+requires_weapons = PackedStringArray()
+icon_color = Color(0.7, 0.72, 0.8, 1.0)
+discovered_by_default = true
+discover_stage = &""
+effect = ExtResource("2")

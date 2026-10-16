@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"bulwark"
+display_name = "Bulwark Slam"
+description = "A heavy shield-slam arc in your path. Huge damage, huge knockback."
+upgrade_description = "Wider arc, bigger hits, harder shove."
+evolution_passive_id = &"armor"
+evolution_name = "Bastion's Wrath"
+evolution_description = "The earth itself recoils from your slam."

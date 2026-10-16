@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/character_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"shadow"
+display_name = "Shadowblade"
+flavor = "Fast and fragile. Daggers from the dark."
+unlock_rule = "shards"
+unlock_cost = 100
+starting_weapon = &"sdagger"
+base_hp = 80.0
+damage_mult = 0.85
+speed_mult = 1.25
+magnet_mult = 1.0
+xp_mult = 1.1
+palette = {"cloak": Color(0.02, 0.03, 0.08, 1.0), "tunic": Color(0.08, 0.14, 0.3, 1.0), "lining": Color(0.25, 0.35, 0.7, 1.0), "eyes": Color(0.55, 0.75, 1.0, 1.0)}
+walk_sheet = "res://assets/sprites/player_shadow_walk.png"
+portrait = "res://assets/sprites/player_shadow_idle.png"

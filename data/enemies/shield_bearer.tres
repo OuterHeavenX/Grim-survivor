@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/shield.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"shield_bearer"
+display_name = "Shield Bearer"
+base_hp = 90.0
+base_damage = 13.0
+speed = 70.0
+xp_value = 5
+radius = 22.0
+walk_frames = 0
+tags = PackedStringArray("heavy", "warden")
+water_response = "resist"
+drop_profile = "standard"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"arc": 1.05, "block": 0.8, "turn_rate": 1.6}

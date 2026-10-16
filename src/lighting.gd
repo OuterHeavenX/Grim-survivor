@@ -64,6 +64,10 @@ func flash(pos: Vector2, color: Color, energy := 2.2, tex_scale := 3.0, dur := 0
 		return
 	if get_tree().get_nodes_in_group("light_flash").size() > 6:
 		return
+	# The flashes setting turns off light bursts; telegraphs never rely on them.
+	var gm = get_node_or_null("/root/GameManager")
+	if gm and not bool(gm.setting("flashes")):
+		return
 	var l := FlashLight.new()
 	l.add_to_group("light_flash")
 	l.texture = _tex

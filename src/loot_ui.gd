@@ -6,6 +6,8 @@ signal loot_chosen(choice)
 
 var gm = null
 var panel: VBoxContainer
+var title: Label
+var sub: Label
 
 
 func _ready() -> void:
@@ -27,7 +29,7 @@ func _ready() -> void:
 	vb.add_theme_constant_override("separation", 14)
 	center.add_child(vb)
 
-	var title := Label.new()
+	title = Label.new()
 	title.text = "ELITE SPOILS"
 	title.add_theme_font_size_override("font_size", 54)
 	title.add_theme_color_override("font_color", Color(1.0, 0.78, 0.3))
@@ -36,7 +38,7 @@ func _ready() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(title)
 
-	var sub := Label.new()
+	sub = Label.new()
 	sub.text = "choose one of three"
 	sub.add_theme_font_size_override("font_size", 26)
 	sub.add_theme_color_override("font_color", Color(0.85, 0.75, 0.5))
@@ -48,9 +50,12 @@ func _ready() -> void:
 	vb.add_child(panel)
 
 
-func show_screen(options: Array) -> void:
+func show_screen(options: Array, heading := "ELITE SPOILS", subtitle := "choose one of three") -> void:
+	title.text = heading
+	sub.text = subtitle
 	for c in panel.get_children():
 		c.queue_free()
+	var first := true
 	for ch in options:
 		var b := Button.new()
 		b.custom_minimum_size = Vector2(580, 124)
@@ -58,6 +63,9 @@ func show_screen(options: Array) -> void:
 		b.text = "%s\n%s" % [str(ch["name"]), str(ch["desc"])]
 		b.pressed.connect(_on_pick.bind(ch))
 		panel.add_child(b)
+		if first:
+			b.call_deferred("grab_focus")
+			first = false
 	visible = true
 
 

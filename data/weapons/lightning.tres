@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"lightning"
+display_name = "Chain Lightning"
+description = "Lightning arcs between nearby foes."
+upgrade_description = "More chains, more damage."
+evolution_passive_id = &"magnet"
+evolution_name = "Storm Sovereign"
+evolution_description = "Lightning hunts every nearby foe at once."

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/pearl_of_ruin.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"pearl_of_ruin"
+display_name = "Pearl of Ruin"
+rarity = "common"
+tags = PackedStringArray("pickup")
+description = "Every 30 gems become a soul shard."
+modifiers = {}
+requires_weapons = PackedStringArray()
+icon_color = Color(0.85, 0.75, 1, 1.0)
+discovered_by_default = true
+discover_stage = &""
+effect = ExtResource("2")

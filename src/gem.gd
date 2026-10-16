@@ -40,6 +40,11 @@ func _physics_process(delta: float) -> void:
 		vel = d.normalized() * 720.0 if dist > 1.0 else Vector2.ZERO
 	if dist < 28.0:
 		gm.add_xp(value)
+		if gm.run_stats:
+			gm.run_stats.add_pickup("gems")
+		var main = get_tree().get_first_node_in_group("main")
+		if main and main.get("relics"):
+			main.relics.on_gem(value)
 		get_node("/root/AudioMan").play_gem()
 		get_node("/root/JuiceMan").gem_sparkle(global_position)
 		queue_free()

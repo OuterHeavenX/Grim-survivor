@@ -15,324 +15,27 @@ enum State{TITLE, RUNNING, LEVELUP, PAUSED, GAMEOVER, VICTORY, CHEST}
 const RUN_DURATION := 300.0
 const MAX_WEAPONS := 4
 
-const WEAPONS := {
-	"dagger": {
-		"name": "Dagger Throw", "max": 5,
-		"desc": "Hurls daggers at the nearest foe.",
-		"up": "More daggers, more damage.",
-	},
-	"fireball": {
-		"name": "Fireball", "max": 5,
-		"desc": "Lobs an exploding fireball at the horde.",
-		"up": "Bigger blast, more damage.",
-	},
-	"frost": {
-		"name": "Frost Nova", "max": 5,
-		"desc": "A freezing ring that chills nearby foes.",
-		"up": "Wider ring, longer chill.",
-	},
-	"blades": {
-		"name": "Spinning Blades", "max": 5,
-		"desc": "Blades orbit you, shredding on contact.",
-		"up": "More blades, more damage.",
-	},
-	"lightning": {
-		"name": "Chain Lightning", "max": 5,
-		"desc": "Lightning arcs between nearby foes.",
-		"up": "More chains, more damage.",
-	},
-	"scythe": {
-		"name": "Scythe Whirl", "max": 5,
-		"desc": "A giant spectral scythe orbits you, dragging foes inward.",
-		"up": "Bigger scythe, harder hits, stronger pull.",
-	},
-	"raven": {
-		"name": "Raven Swarm", "max": 5,
-		"desc": "Spectral ravens hunt down your foes.",
-		"up": "More ravens, more pierce, faster.",
-	},
-	"lance": {
-		"name": "Bone Lance", "max": 5,
-		"desc": "Hurls heavy spears that pierce through whole lines of foes.",
-		"up": "More damage, more pierce.",
-	},
-	"miasma": {
-		"name": "Plague Miasma", "max": 5,
-		"desc": "Drops a toxic cloud on the horde that melts foes over time.",
-		"up": "Bigger cloud, longer linger, harder ticks.",
-	},
-	"comet": {
-		"name": "Comet Fall", "max": 5,
-		"desc": "Calls down meteors on random foes after a warning flash.",
-		"up": "More meteors, bigger blasts.",
-	},
-	"sdagger": {
-		"name": "Shadow Daggers", "max": 5,
-		"desc": "Throws fast shadow daggers at the nearest foe.",
-		"up": "More daggers, faster, harder hits.",
-	},
-	"ember": {
-		"name": "Ember Volley", "max": 5,
-		"desc": "Lobs volatile embers that explode on impact.",
-		"up": "More embers, bigger blasts.",
-	},
-	"bulwark": {
-		"name": "Bulwark Slam", "max": 5,
-		"desc": "A heavy shield-slam arc in your path. Huge damage, huge knockback.",
-		"up": "Wider arc, bigger hits, harder shove.",
-	},
-}
-
-const PASSIVES := {
-	"might": {"name": "Might", "max": 5, "desc": "+12% all damage."},
-	"haste": {"name": "Swiftness", "max": 5, "desc": "Attack 8% faster."},
-	"boots": {"name": "Swift Boots", "max": 5, "desc": "+8% move speed."},
-	"vitality": {"name": "Vitality", "max": 5, "desc": "+20 max HP and heal 20."},
-	"magnet": {"name": "Greed Charm", "max": 5, "desc": "+40% pickup radius."},
-	"siphon": {"name": "Soul Siphon", "max": 5, "desc": "Killing a foe restores 2 HP."},
-	"armor": {"name": "Stone Skin", "max": 5, "desc": "Block 2 damage from every hit."},
-}
+const CONTENT: GameContentData = preload("res://data/game_content.tres")
+# Compatibility dictionaries keep the rest of the game stable while systems are
+# migrated to typed resources incrementally.
+var WEAPONS: Dictionary = CONTENT.weapon_dictionary()
+var PASSIVES: Dictionary = CONTENT.passive_dictionary()
+var EVOLUTIONS: Dictionary = CONTENT.evolution_dictionary()
 
 
 
-const EVOLUTIONS := {
-	"dagger": {"passive": "might", "name": "Fang Barrage",
-		"desc": "Hurls five massive spectral fangs that shred whole lines."},
-	"fireball": {"passive": "might", "name": "Hellfire Bloom",
-		"desc": "A cataclysmic blast with a huge burning radius."},
-	"frost": {"passive": "haste", "name": "Glacial Tempest",
-		"desc": "A vast freezing storm that never lets foes escape."},
-	"blades": {"passive": "haste", "name": "Cyclone Shred",
-		"desc": "A screaming cyclone of blades orbiting you."},
-	"lightning": {"passive": "magnet", "name": "Storm Sovereign",
-		"desc": "Lightning hunts every nearby foe at once."},
-	"scythe": {"passive": "siphon", "name": "Reaper's Due",
-		"desc": "A colossal scythe that harvests the horde's souls."},
-	"raven": {"passive": "boots", "name": "Murder Unkind",
-		"desc": "A relentless flock of spectral hunters."},
-	"lance": {"passive": "armor", "name": "Impaler",
-		"desc": "A siege spear that skewers everything in its path."},
-	"miasma": {"passive": "haste", "name": "Blight Epidemic",
-		"desc": "A vast plague cloud that consumes the horde."},
-	"comet": {"passive": "might", "name": "Starfall",
-		"desc": "The sky itself falls on your enemies."},
-	"sdagger": {"passive": "haste", "name": "Umbral Fan",
-		"desc": "A storm of void-forged blades."},
-	"ember": {"passive": "might", "name": "Inferno Requiem",
-		"desc": "The sky rains burning ruin."},
-	"bulwark": {"passive": "armor", "name": "Bastion's Wrath",
-		"desc": "The earth itself recoils from your slam."},
-}
-
-
-
-const CHAR_CLASSES := [
-	{
-		"id": "rogue", "name": "Hooded Rogue", "cost": 0,
-		"flavor": "A balanced survivor of the Hollow.",
-		"hp": 100.0, "dmg": 1.0, "speed": 1.0, "magnet": 1.0, "xp": 1.0,
-		"weapon": "dagger",
-		"palette": {
-			"cloak": Color(0.07, 0.08, 0.15), "tunic": Color(0.32, 0.18, 0.48),
-			"lining": Color(0.55, 0.08, 0.14), "eyes": Color(1.0, 0.25, 0.25),
-		},
-	},
-	{
-		"id": "shadow", "name": "Shadowblade", "cost": 100,
-		"flavor": "Fast and fragile. Daggers from the dark.",
-		"hp": 80.0, "dmg": 0.85, "speed": 1.25, "magnet": 1.0, "xp": 1.1,
-		"weapon": "sdagger",
-		"palette": {
-			"cloak": Color(0.02, 0.03, 0.08), "tunic": Color(0.08, 0.14, 0.3),
-			"lining": Color(0.25, 0.35, 0.7), "eyes": Color(0.55, 0.75, 1.0),
-		},
-	},
-	{
-		"id": "pyro", "name": "Pyromancer", "cost": 200,
-		"flavor": "Frail, but everything burns.",
-		"hp": 75.0, "dmg": 1.35, "speed": 0.95, "magnet": 1.0, "xp": 1.0,
-		"weapon": "ember",
-		"palette": {
-			"cloak": Color(0.16, 0.05, 0.04), "tunic": Color(0.55, 0.16, 0.05),
-			"lining": Color(0.95, 0.45, 0.1), "eyes": Color(1.0, 0.65, 0.15),
-		},
-	},
-	{
-		"id": "warden", "name": "Iron Warden", "cost": 300,
-		"flavor": "A walking wall of steel.",
-		"hp": 160.0, "dmg": 1.0, "speed": 0.85, "magnet": 1.2, "xp": 0.95,
-		"weapon": "bulwark",
-		"palette": {
-			"cloak": Color(0.1, 0.11, 0.13), "tunic": Color(0.38, 0.38, 0.42),
-			"lining": Color(0.85, 0.65, 0.25), "eyes": Color(1.0, 0.85, 0.4),
-		},
-	},
-	{
-		"id": "flame", "name": "Flamecaller", "cost": -1,
-		"flavor": "Answers the horde with falling fire.",
-		"hp": 85.0, "dmg": 1.1, "speed": 0.95, "magnet": 1.0, "xp": 1.0,
-		"weapon": "fireball",
-		"palette": {
-			"cloak": Color(0.16, 0.06, 0.04), "tunic": Color(0.6, 0.22, 0.08),
-			"lining": Color(0.95, 0.5, 0.12), "eyes": Color(1.0, 0.7, 0.2),
-		},
-	},
-	{
-		"id": "rime", "name": "Rimewarden", "cost": -1,
-		"flavor": "Stills the marsh with killing cold.",
-		"hp": 110.0, "dmg": 0.9, "speed": 0.92, "magnet": 1.1, "xp": 1.0,
-		"weapon": "frost",
-		"palette": {
-			"cloak": Color(0.05, 0.1, 0.16), "tunic": Color(0.2, 0.45, 0.6),
-			"lining": Color(0.6, 0.9, 1.0), "eyes": Color(0.7, 0.95, 1.0),
-		},
-	},
-	{
-		"id": "dancer", "name": "Bladedancer", "cost": -1,
-		"flavor": "Never still, never unarmed.",
-		"hp": 85.0, "dmg": 0.95, "speed": 1.2, "magnet": 1.0, "xp": 1.0,
-		"weapon": "blades",
-		"palette": {
-			"cloak": Color(0.08, 0.08, 0.1), "tunic": Color(0.45, 0.45, 0.5),
-			"lining": Color(0.85, 0.85, 0.9), "eyes": Color(0.9, 0.95, 1.0),
-		},
-	},
-	{
-		"id": "storm", "name": "Stormbound", "cost": -1,
-		"flavor": "The arc finds every throat in turn.",
-		"hp": 90.0, "dmg": 1.0, "speed": 1.05, "magnet": 1.0, "xp": 1.1,
-		"weapon": "lightning",
-		"palette": {
-			"cloak": Color(0.06, 0.07, 0.14), "tunic": Color(0.3, 0.32, 0.7),
-			"lining": Color(0.7, 0.8, 1.0), "eyes": Color(0.85, 0.9, 1.0),
-		},
-	},
-	{
-		"id": "reaper", "name": "The Reaper", "cost": -1,
-		"flavor": "Harvests in a wide, patient circle.",
-		"hp": 105.0, "dmg": 1.05, "speed": 0.9, "magnet": 1.0, "xp": 1.0,
-		"weapon": "scythe",
-		"palette": {
-			"cloak": Color(0.04, 0.05, 0.06), "tunic": Color(0.18, 0.2, 0.22),
-			"lining": Color(0.5, 0.6, 0.55), "eyes": Color(0.6, 1.0, 0.7),
-		},
-	},
-	{
-		"id": "ravenmark", "name": "Ravenmark", "cost": -1,
-		"flavor": "Sends the flock ahead to feed.",
-		"hp": 85.0, "dmg": 0.95, "speed": 1.1, "magnet": 1.2, "xp": 1.0,
-		"weapon": "raven",
-		"palette": {
-			"cloak": Color(0.05, 0.05, 0.08), "tunic": Color(0.22, 0.2, 0.3),
-			"lining": Color(0.5, 0.45, 0.6), "eyes": Color(0.9, 0.85, 0.4),
-		},
-	},
-	{
-		"id": "bonewright", "name": "Bonewright", "cost": -1,
-		"flavor": "Drives a spear through whole ranks.",
-		"hp": 115.0, "dmg": 1.15, "speed": 0.88, "magnet": 0.95, "xp": 1.0,
-		"weapon": "lance",
-		"palette": {
-			"cloak": Color(0.1, 0.09, 0.07), "tunic": Color(0.5, 0.46, 0.36),
-			"lining": Color(0.85, 0.82, 0.7), "eyes": Color(1.0, 0.95, 0.75),
-		},
-	},
-	{
-		"id": "plague", "name": "Plaguebearer", "cost": -1,
-		"flavor": "Leaves a trail the horde chokes on.",
-		"hp": 100.0, "dmg": 0.9, "speed": 0.98, "magnet": 1.0, "xp": 1.15,
-		"weapon": "miasma",
-		"palette": {
-			"cloak": Color(0.05, 0.1, 0.05), "tunic": Color(0.28, 0.45, 0.18),
-			"lining": Color(0.6, 0.9, 0.3), "eyes": Color(0.8, 1.0, 0.4),
-		},
-	},
-	{
-		"id": "starcaller", "name": "Starcaller", "cost": -1,
-		"flavor": "Marks the ground, then the sky answers.",
-		"hp": 90.0, "dmg": 1.2, "speed": 0.95, "magnet": 1.0, "xp": 1.0,
-		"weapon": "comet",
-		"palette": {
-			"cloak": Color(0.06, 0.05, 0.12), "tunic": Color(0.35, 0.25, 0.6),
-			"lining": Color(0.8, 0.7, 1.0), "eyes": Color(1.0, 0.9, 0.6),
-		},
-	},
-]
-
-
-
-const STAGES := [
-	{
-		"name": "ASHEN HOLLOW", "boss": "herald", "boss_name": "HERALD OF VORGATH",
-		"boss_aura": Color(0.55, 0.3, 1.0), "theme": "ashen",
-		"relics": ["lance", "frost"],
-		"pool": ["skeleton", "wisp", "husk"],
-	},
-	{
-		"name": "THE WEEPING MARSH", "boss": "maw", "boss_name": "MAW OF THE MIRE",
-		"boss_aura": Color(0.35, 1.0, 0.45), "theme": "marsh",
-		"relics": ["sdagger", "miasma"],
-		"pool": ["bogling", "wisp", "husk"],
-	},
-	{
-		"name": "THRONE OF CINDERS", "boss": "cinderking", "boss_name": "THE CINDER KING",
-		"boss_aura": Color(1.0, 0.45, 0.15), "theme": "cinder",
-		"relics": ["ember", "fireball"],
-		"pool": ["imp", "bogling", "husk"],
-	},
-	{
-		"name": "THE BONE DESERT", "boss": "herald", "boss_name": "THE PALE HERALD",
-		"boss_aura": Color(1.0, 0.85, 0.5), "theme": "desert",
-		"relics": ["comet", "scythe"],
-		"pool": ["skeleton", "imp", "mire"],
-	},
-	{
-		"name": "ROTGROVE", "boss": "maw", "boss_name": "THE ROTGROVE MAW",
-		"boss_aura": Color(0.5, 1.0, 0.35), "theme": "grove",
-		"relics": ["raven", "blades"],
-		"pool": ["bogling", "mire", "imp"],
-	},
-	{
-		"name": "THE SUNKEN ROAD", "boss": "cinderking", "boss_name": "WARDEN OF THE ROAD",
-		"boss_aura": Color(0.9, 0.5, 0.25), "theme": "barrens",
-		"relics": ["bulwark", "lightning"],
-		"pool": ["husk", "mire", "titan"],
-	},
-	{
-		"name": "THE DROWNED REACH", "boss": "maw", "boss_name": "THE DROWNED MAW",
-		"boss_aura": Color(0.4, 0.75, 1.0), "theme": "drowned",
-		"relics": ["frost", "miasma"],
-		"pool": ["mire", "wisp", "titan"],
-	},
-	{
-		"name": "THE LAST BASTION", "boss": "cinderking", "boss_name": "THE ASHEN SOVEREIGN",
-		"boss_aura": Color(1.0, 0.35, 0.12), "theme": "bastion",
-		"relics": ["fireball", "comet"],
-		"pool": ["titan", "imp", "mire"],
-	},
-]
+# Characters, stages and meta tracks are authored as Resources under data/;
+# these views keep the dictionary shape the menus and tests were written
+# against while the rest of the game reads the typed definitions directly.
+var CHAR_CLASSES: Array = CONTENT.character_dictionaries()
+var STAGES: Array = CONTENT.stage_dictionaries()
+var META_TRACKS: Array = CONTENT.meta_track_dictionaries()
+var META_BONUS: Dictionary = CONTENT.meta_bonus_dictionary()
 
 const SAVE_PATH := "user://grim_survivors.cfg"
-
-
-const META_TRACKS := [
-	{"id": "edge", "name": "Sharpened Edge", "desc": "+6% damage per rank.",
-		"costs": [10, 25, 50, 100, 180], "fmt": "+%d%% damage", "short": "+%d%%"},
-	{"id": "vitality", "name": "Iron Vitality", "desc": "+12 max HP per rank.",
-		"costs": [10, 25, 50, 100, 180], "fmt": "+%d max HP", "short": "+%d HP"},
-	{"id": "boots", "name": "Swift Boots", "desc": "+4% move speed per rank.",
-		"costs": [10, 25, 50, 100, 180], "fmt": "+%d%% move speed", "short": "+%d%%"},
-	{"id": "greed", "name": "Greed Charm", "desc": "+8% pickup radius per rank.",
-		"costs": [10, 25, 50, 100, 180], "fmt": "+%d%% pickup radius", "short": "+%d%%"},
-	{"id": "wind", "name": "Second Wind", "desc": "+1 revive per run. Revive at 50% HP with a knockback nova.",
-		"costs": [10, 25, 50, 100, 180], "fmt": "%d revive(s) per run", "short": "%d revive"},
-	{"id": "scholar", "name": "Scholar's Mind", "desc": "+5% XP gain per rank.",
-		"costs": [10, 25, 50, 100, 180], "fmt": "+%d%% XP gain", "short": "+%d%%"},
-]
-const META_BONUS := {
-	"edge": 6.0, "vitality": 12.0, "boots": 4.0,
-	"greed": 8.0, "wind": 1.0, "scholar": 5.0,
-}
+# Bumped when the save gains sections. Loading never requires it: every key
+# has a default, and saving rewrites only the keys this build owns.
+const SAVE_VERSION := 2
 
 var shards := 0
 var run_shards := 0
@@ -386,11 +89,34 @@ var boss_alive := false
 
 var best := {"time": 0.0, "kills": 0, "level": 0, "wins": 0}
 
+# Seeds every stage's event placement, so a run can be replayed and a bug
+# report can name the run it came from. -1 means "roll one"; tests pin it.
+var run_seed := 0
+var forced_seed := -1
+var run_stats: RunStats = RunStats.new()
+var mods: GameModifiers = GameModifiers.new()
+# Run relics held this run (ids, in pick order) and the ones ever discovered.
+var run_relics: Array[String] = []
+var relics_discovered := {}
+# A campaign completion marker: cosmetic, not power.
+var campaign_crowned := false
+
+const DEFAULT_SETTINGS := {
+	"shake": 1.0, "flashes": true, "damage_numbers": true,
+	"hazard_opacity": 1.0, "high_contrast": false, "reduced_effects": false,
+}
+var settings: Dictionary = DEFAULT_SETTINGS.duplicate()
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	var content_errors := CONTENT.validation_errors()
+	assert(content_errors.is_empty(), "Invalid game content:\n%s" % "\n".join(content_errors))
+	if not content_errors.is_empty():
+		push_error("Invalid game content:\n%s" % "\n".join(content_errors))
 	load_best()
 	load_meta()
+	load_settings()
 
 
 func meta_rank(track_id: String) -> int:
@@ -579,6 +305,15 @@ func class_start_weapon() -> String:
 
 
 
+func setting(key: String) -> Variant:
+	return settings.get(key, DEFAULT_SETTINGS.get(key))
+
+
+func set_setting(key: String, value: Variant) -> void:
+	settings[key] = value
+	save_settings()
+
+
 func meta_damage_mult() -> float:
 	return (1.0 + 0.06 * float(meta_rank("edge"))) * class_damage_mult()
 
@@ -706,6 +441,11 @@ func run_start_weapons() -> Dictionary:
 
 
 func reset_run() -> void:
+	run_seed = forced_seed if forced_seed >= 0 else randi() % 1000000
+	run_stats = RunStats.new()
+	run_stats.run_seed = run_seed
+	mods.clear_all()
+	run_relics.clear()
 	stages_cleared = 0
 	run_time = 0.0
 	kills = 0
@@ -728,6 +468,93 @@ func stage_data() -> Dictionary:
 	return STAGES[clampi(stage, 0, STAGES.size() - 1)]
 
 
+func stage_def() -> StageData:
+	return CONTENT.stage_at(stage)
+
+
+func stage_rule_seed(stage_idx: int) -> int:
+	# Distinct per stage and per run, stable for a given run seed.
+	return abs(hash("%d:%d" % [run_seed, stage_idx])) % 2147483647
+
+
+# --- run modifiers and relics --------------------------------------------
+
+func clear_stage_mods() -> void:
+	mods.clear_prefix("stage:")
+
+
+func has_relic(id: String) -> bool:
+	return run_relics.has(id)
+
+
+func add_run_relic(id: String) -> bool:
+	var r := CONTENT.relic(id)
+	if r == null or run_relics.has(id):
+		return false
+	run_relics.append(id)
+	if not r.modifiers.is_empty():
+		mods.set_mods("relic:" + id, r.modifiers)
+	weapons_changed.emit()
+	return true
+
+
+func is_relic_discovered(id: String) -> bool:
+	var r := CONTENT.relic(id)
+	if r == null:
+		return false
+	return r.discovered_by_default or bool(relics_discovered.get(id, false))
+
+
+func discover_stage_relics(stage_id: String) -> Array:
+	# Returns the relics this stage's first clear revealed.
+	var found: Array = []
+	for item in CONTENT.relics:
+		var r := item as RelicData
+		if r and String(r.discover_stage) == stage_id and not is_relic_discovered(String(r.id)):
+			relics_discovered[String(r.id)] = true
+			found.append(String(r.id))
+	if not found.is_empty():
+		save_meta()
+	return found
+
+
+func roll_relics(tags: PackedStringArray, count := 3, rng: RandomNumberGenerator = null) -> Array:
+	# Weighted, not filtered: each matching stage tag adds weight, so a stage
+	# leans towards its theme without ever offering only that.
+	var pool: Array = []
+	for item in CONTENT.relics:
+		var r := item as RelicData
+		if r == null or run_relics.has(String(r.id)) or not is_relic_discovered(String(r.id)):
+			continue
+		if not r.requires_weapons.is_empty():
+			var ok := false
+			for w in r.requires_weapons:
+				if weapons.has(w):
+					ok = true
+			if not ok:
+				continue
+		var wgt := 1.0
+		for t in r.tags:
+			if tags.has(t):
+				wgt += 2.0
+		pool.append([r, wgt])
+	var out: Array = []
+	while out.size() < count and not pool.is_empty():
+		var total := 0.0
+		for e in pool:
+			total += float(e[1])
+		var roll := (rng.randf() if rng else randf()) * total
+		var pick := pool.size() - 1
+		for i in pool.size():
+			roll -= float(pool[i][1])
+			if roll <= 0.0:
+				pick = i
+				break
+		out.append(pool[pick][0])
+		pool.remove_at(pick)
+	return out
+
+
 func is_evolved(id: String) -> bool:
 	return bool(evolved.get(id, false))
 
@@ -735,7 +562,7 @@ func is_evolved(id: String) -> bool:
 func add_xp(v: int) -> void:
 	if state != State.RUNNING and state != State.LEVELUP:
 		return
-	xp += int(round(float(v) * meta_xp_mult()))
+	xp += int(round(float(v) * meta_xp_mult() * mods.mult("xp")))
 	var need := xp_needed()
 	while xp >= need:
 		xp -= need
@@ -752,19 +579,19 @@ func add_kill() -> void:
 
 
 func might_mult() -> float:
-	return (1.0 + 0.12 * float(passives.get("might", 0))) * meta_damage_mult()
+	return (1.0 + 0.12 * float(passives.get("might", 0))) * meta_damage_mult() * mods.mult("damage")
 
 
 func haste_mult() -> float:
-	return pow(0.92, float(passives.get("haste", 0)))
+	return pow(0.92, float(passives.get("haste", 0))) * mods.mult("cooldown")
 
 
 func speed_mult() -> float:
-	return (1.0 + 0.08 * float(passives.get("boots", 0))) * meta_speed_mult()
+	return (1.0 + 0.08 * float(passives.get("boots", 0))) * meta_speed_mult() * mods.mult("speed")
 
 
 func magnet_mult() -> float:
-	return (1.0 + 0.4 * float(passives.get("magnet", 0))) * meta_magnet_mult()
+	return (1.0 + 0.4 * float(passives.get("magnet", 0))) * meta_magnet_mult() * mods.mult("magnet")
 
 
 func siphon_heal() -> float:
@@ -772,7 +599,7 @@ func siphon_heal() -> float:
 
 
 func armor_block() -> float:
-	return 2.0 * float(passives.get("armor", 0))
+	return 2.0 * float(passives.get("armor", 0)) + mods.add("armor")
 
 
 func roll_upgrades(count := 3) -> Array:
@@ -824,6 +651,7 @@ func end_run(victory: bool) -> void:
 	best["time"] = maxf(float(best["time"]), survived)
 	best["kills"] = maxi(int(best["kills"]), kills)
 	best["level"] = maxi(int(best["level"]), level)
+	run_stats.finish(survived, victory, stages_cleared, evolved)
 	if victory:
 		best["wins"] = int(best["wins"]) + 1
 		run_shards += 10
@@ -848,6 +676,12 @@ func load_meta() -> void:
 		campaign_unlocked = clampi(
 			int(cfg.get_value("meta", "campaign_unlocked", 1)), 1, STAGES.size())
 		campaign = int(cfg.get_value("meta", "campaign_mode", 0)) > 0
+		campaign_crowned = int(cfg.get_value("meta", "campaign_crowned", 0)) > 0
+		relics_discovered = {}
+		for item in CONTENT.relics:
+			var r := item as RelicData
+			if r and int(cfg.get_value("relics", "found_" + String(r.id), 0)) > 0:
+				relics_discovered[String(r.id)] = true
 		var sel := str(cfg.get_value("meta", "char_selected", "rogue"))
 		selected_class = sel if is_class_unlocked(sel) else "rogue"
 		_load_loadout(cfg)
@@ -858,6 +692,8 @@ func load_meta() -> void:
 		selected_class = "rogue"
 		campaign_unlocked = 1
 		campaign = false
+		campaign_crowned = false
+		relics_discovered = {}
 
 
 func save_meta() -> void:
@@ -874,6 +710,35 @@ func save_meta() -> void:
 	cfg.set_value("meta", "campaign_unlocked", campaign_unlocked)
 	cfg.set_value("meta", "campaign_mode", 1 if campaign else 0)
 	cfg.set_value("meta", "loadout", ",".join(loadout))
+	cfg.set_value("meta", "campaign_crowned", 1 if campaign_crowned else 0)
+	cfg.set_value("meta", "save_version", SAVE_VERSION)
+	for rid in relics_discovered:
+		cfg.set_value("relics", "found_" + String(rid), 1)
+	cfg.save(SAVE_PATH)
+
+
+func load_settings() -> void:
+	settings = DEFAULT_SETTINGS.duplicate()
+	var cfg := ConfigFile.new()
+	if cfg.load(SAVE_PATH) != OK:
+		return
+	for k in DEFAULT_SETTINGS:
+		var def: Variant = DEFAULT_SETTINGS[k]
+		var v: Variant = cfg.get_value("settings", k, def)
+		# A hand-edited or future save may hold the wrong type; fall back
+		# rather than let a string reach the shake maths.
+		if typeof(v) == TYPE_INT and typeof(def) == TYPE_FLOAT:
+			v = float(v)
+		settings[k] = v if typeof(v) == typeof(def) else def
+	settings["shake"] = clampf(float(settings["shake"]), 0.0, 1.0)
+	settings["hazard_opacity"] = clampf(float(settings["hazard_opacity"]), 0.5, 1.5)
+
+
+func save_settings() -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(SAVE_PATH)
+	for k in settings:
+		cfg.set_value("settings", k, settings[k])
 	cfg.save(SAVE_PATH)
 
 

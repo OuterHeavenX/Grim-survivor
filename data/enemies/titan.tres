@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"titan"
+display_name = "Titan"
+base_hp = 220.0
+base_damage = 24.0
+speed = 44.0
+xp_value = 8
+radius = 34.0
+walk_frames = 9
+tags = PackedStringArray("heavy")
+water_response = "resist"
+drop_profile = "standard"
+is_boss = false

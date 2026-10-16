@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"herald"
+display_name = "Herald"
+base_hp = 1600.0
+base_damage = 26.0
+speed = 88.0
+xp_value = 60
+radius = 44.0
+walk_frames = 8
+tags = PackedStringArray("boss")
+water_response = "resist"
+drop_profile = "boss"
+is_boss = true

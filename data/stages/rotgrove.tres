@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="StageData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_data.gd" id="1"]
+[ext_resource type="Resource" path="res://data/bosses/the_rotgrove_maw.tres" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"rotgrove"
+display_name = "ROTGROVE"
+theme = "grove"
+boss = ExtResource("2")
+enemy_pool = PackedStringArray("bogling", "mire", "imp")
+special_enemies = Array[Resource]([])
+relic_weapons = PackedStringArray("raven", "blades")
+relic_tags = PackedStringArray("summon", "poison")
+events = Array[Resource]([])
+music_profile = "grove"
+fog_tint = Color(0.35, 0.6, 0.35, 1.0)
+boss_aura = Color(0.5, 1.0, 0.35, 1.0)

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageRuleData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/stage_rule_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/stage/rules/drowned_rule.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"dead_tide"
+impl = ExtResource("2")
+intro = "Currents carry all at high tide."
+phase_times = PackedFloat32Array(60.0, 180.0, 255.0)
+grace = 8.0
+warn_time = 1.0
+max_hazards = 24
+min_safe_fraction = 0.45
+safe_reach = 230.0
+color = Color(0.4, 0.75, 1.0, 1.0)
+params = {"caches": 6, "cache_open": 1.0, "high_len": 10.0, "low_len": 22.0, "lanes": 3, "lane_width": 150.0, "player_push": 95.0, "enemy_push": 120.0, "pickup_push": 170.0, "drowned_per_cache": 3, "ship_interval": 9.0, "broadside": 7, "broadside_radius": 70.0, "ring_radius": 640.0, "ring_push": 80.0}

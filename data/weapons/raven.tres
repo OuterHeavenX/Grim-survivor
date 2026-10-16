@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"raven"
+display_name = "Raven Swarm"
+description = "Spectral ravens hunt down your foes."
+upgrade_description = "More ravens, more pierce, faster."
+evolution_passive_id = &"boots"
+evolution_name = "Murder Unkind"
+evolution_description = "A relentless flock of spectral hunters."

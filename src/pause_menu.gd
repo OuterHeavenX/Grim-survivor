@@ -4,8 +4,10 @@ extends CanvasLayer
 signal resume_pressed
 signal restart_pressed
 signal title_pressed
+signal settings_pressed
 
 var sound_btn: Button
+var _resume: Button = null
 var am = null
 
 
@@ -38,6 +40,7 @@ func _ready() -> void:
 
 	for def in [
 		["RESUME", "resume_pressed"],
+		["SETTINGS", "settings_pressed"],
 		["RESTART", "restart_pressed"],
 		["TITLE", "title_pressed"],
 	]:
@@ -50,6 +53,8 @@ func _ready() -> void:
 		var c := CenterContainer.new()
 		c.add_child(b)
 		vb.add_child(c)
+		if _resume == null:
+			_resume = b
 
 	sound_btn = Button.new()
 	sound_btn.custom_minimum_size = Vector2(400, 92)
@@ -63,6 +68,9 @@ func _ready() -> void:
 func show_screen() -> void:
 	_refresh_sound()
 	visible = true
+	# Focus makes the menu navigable by controller and keyboard.
+	if _resume:
+		_resume.grab_focus()
 
 
 func hide_screen() -> void:

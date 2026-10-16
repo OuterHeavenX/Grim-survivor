@@ -84,6 +84,11 @@ func _nearest_except(from: Vector2, max_dist: float, skip: Dictionary):
 	return best
 
 
+func _bonus_pierce() -> int:
+	# Relics (Ashen Quiver, Bone Needle) add pierce to thrown weapons.
+	return int(gm.mods.add("pierce"))
+
+
 func _dmg(base: float) -> float:
 	return base * gm.might_mult()
 
@@ -158,7 +163,7 @@ func _fire_dagger(lvl: int) -> void:
 		p.setup("dagger", _dmg(15.0 * (1.0 + 0.5 * float(lvl - 1)) * (2.2 if evo else 1.0)), player.global_position)
 		var ang := base_ang + (float(i) - float(n - 1) / 2.0) * 0.14
 		p.set("vel", Vector2.from_angle(ang) * 640.0)
-		p.set("pierce", 1 + lvl / 2 + (4 if evo else 0))
+		p.set("pierce", 1 + lvl / 2 + (4 if evo else 0) + _bonus_pierce())
 		p.set("evo", evo)
 		p.set("life", 1.6)
 		_main().run.add_child(p)
@@ -208,7 +213,7 @@ func _fire_lightning(lvl: int) -> void:
 			break
 		skip[cur.get_instance_id()] = true
 		pts.append(cur.global_position)
-		cur.take_damage(dmg, from, 40.0)
+		cur.take_damage(dmg, from, 40.0, "lightning")
 		from = cur.global_position
 	if pts.size() > 1:
 		am.play_ranged("lightning_crack", -6.0, 0.9, 1.15)
@@ -221,7 +226,7 @@ func _fire_lightning(lvl: int) -> void:
 func _fire_raven(lvl: int) -> void:
 	var evo: bool = gm.is_evolved("raven")
 	var n := 3 + lvl / 2 + (3 if evo else 0)
-	var pierce := 1 + lvl / 2 + (3 if evo else 0)
+	var pierce := 1 + lvl / 2 + (3 if evo else 0) + _bonus_pierce()
 	var dmg := _dmg(30.0 * (1.0 + 0.18 * float(lvl - 1)) * (2.0 if evo else 1.0))
 	am.play_ranged("raven_cry", -8.0, 0.9, 1.15)
 	for i in n:
@@ -248,7 +253,7 @@ func _fire_lance(lvl: int) -> void:
 		var p = ProjectileScript.new()
 		p.setup("lance", _dmg(40.0 * (1.0 + 0.5 * float(lvl - 1)) * (2.4 if evo else 1.0)), player.global_position)
 		p.set("vel", Vector2.from_angle(ang) * (900.0 if evo else 720.0))
-		p.set("pierce", (3 + lvl * 2) * (2 if evo else 1))
+		p.set("pierce", (3 + lvl * 2) * (2 if evo else 1) + _bonus_pierce())
 		p.set("evo", evo)
 		p.set("life", 1.8)
 		_main().run.add_child(p)
@@ -289,8 +294,10 @@ func _fire_comet(lvl: int) -> void:
 		return
 	var n := (2 + lvl / 2) * (2 if evo else 1)
 	am.play_ranged("boss_warning_horn", -12.0, 1.3, 1.5)
+	var m = _main()
 	for i in n:
-		var e = foes[randi() % foes.size()]
+		# Burning foes draw the comets (CombatRules.comet_weight).
+		var e = m.combat.pick_comet_target(foes) if m and m.combat else foes[randi() % foes.size()]
 		var p = ProjectileScript.new()
 		p.setup("comet", _dmg(34.0 * (1.0 + 0.22 * float(lvl - 1)) * (2.0 if evo else 1.0)), e.global_position)
 		p.set("aoe", (95.0 + 10.0 * float(lvl)) * (1.6 if evo else 1.0))
@@ -313,7 +320,7 @@ func _fire_sdagger(lvl: int) -> void:
 		p.setup("sdagger", _dmg(11.0 * (1.0 + 0.45 * float(lvl - 1)) * (2.2 if evo else 1.0)), player.global_position)
 		var ang := base_ang + (float(i) - float(n - 1) / 2.0) * 0.16
 		p.set("vel", Vector2.from_angle(ang) * 700.0)
-		p.set("pierce", 1 + lvl / 2 + (2 if evo else 0))
+		p.set("pierce", 1 + lvl / 2 + (2 if evo else 0) + _bonus_pierce())
 		p.set("evo", evo)
 		p.set("life", 1.4)
 		_main().run.add_child(p)
@@ -333,6 +340,7 @@ func _fire_ember(lvl: int) -> void:
 			aim = aim.rotated(randf_range(-0.2, 0.2) * float(i))
 		var p = ProjectileScript.new()
 		p.setup("fireball", _dmg(18.0 * (1.0 + 0.32 * float(lvl - 1)) * (2.0 if evo else 1.0)), player.global_position)
+		p.source_id = "ember"
 		p.set("vel", aim * 420.0)
 		p.set("aoe", (75.0 + 14.0 * float(lvl)) * (1.7 if evo else 1.0))
 		p.set("evo", evo)

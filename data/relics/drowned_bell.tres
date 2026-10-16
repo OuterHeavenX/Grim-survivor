@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/drowned_bell.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"drowned_bell"
+display_name = "Drowned Bell"
+rarity = "rare"
+tags = PackedStringArray("chain", "cold")
+description = "Frost and blade hits arc to a foe."
+modifiers = {}
+requires_weapons = PackedStringArray("frost", "blades", "lightning")
+icon_color = Color(0.55, 0.8, 1, 1.0)
+discovered_by_default = true
+discover_stage = &""
+effect = ExtResource("2")

@@ -4,20 +4,18 @@ extends CharacterBody2D
 
 signal died
 
-const TYPES := {
-	"skeleton": {"hp": 22.0, "dmg": 9.0, "speed": 125.0, "xp": 1, "radius": 16.0},
-	"husk": {"hp": 70.0, "dmg": 14.0, "speed": 62.0, "xp": 3, "radius": 24.0},
-	"wisp": {"hp": 14.0, "dmg": 7.0, "speed": 150.0, "xp": 2, "radius": 13.0},
-	"bogling": {"hp": 16.0, "dmg": 8.0, "speed": 175.0, "xp": 2, "radius": 13.0},
-	"mire": {"hp": 130.0, "dmg": 17.0, "speed": 50.0, "xp": 5, "radius": 28.0},
-	"imp": {"hp": 12.0, "dmg": 10.0, "speed": 205.0, "xp": 2, "radius": 12.0},
-	"titan": {"hp": 220.0, "dmg": 24.0, "speed": 44.0, "xp": 8, "radius": 34.0},
-	"herald": {"hp": 1600.0, "dmg": 26.0, "speed": 88.0, "xp": 60, "radius": 44.0},
-	"maw": {"hp": 2800.0, "dmg": 32.0, "speed": 78.0, "xp": 120, "radius": 50.0},
-	"cinderking": {"hp": 4500.0, "dmg": 40.0, "speed": 90.0, "xp": 250, "radius": 56.0},
-}
+# Kept as the legacy stat view for code and tests that read enemy.gd's table;
+# the authored source is data/enemies/*.tres (EnemyData).
+static var TYPES: Dictionary = _load_types()
+
+
+static func _load_types() -> Dictionary:
+	var c: GameContentData = load("res://data/game_content.tres")
+	return c.enemy_dictionary() if c else {}
+
 
 var etype := "skeleton"
+var data: EnemyData = null
 var is_elite := false
 var max_hp := 20.0
 var hp := 20.0
@@ -28,6 +26,30 @@ var body_radius := 16.0
 var slow_mult := 1.0
 var slow_t := 0.0
 var dead := false
+
+# Composition hooks. behavior is the role component from EnemyData;
+# controller is set on data-driven bosses (src/boss/boss_controller.gd).
+var behavior: EnemyBehavior = null
+var controller = null
+# Burrowed, submerged or otherwise out of reach: weapons skip it and it
+# cannot be hurt or touch the player.
+var untargetable := false
+# Raised dead and summoned props: no XP, shards or kill credit.
+var no_credit := false
+var revived := false
+# Boss-owned props (armour plates, anchors) cleaned up with their boss.
+var is_boss_object := false
+var summoner = null
+# Environment hooks a stage rule sets each frame: a speed factor (marsh
+# water) and a push (currents, wind) that composes with walking.
+var env_speed := 1.0
+var push := Vector2.ZERO
+# Statuses by name -> seconds left (burning, frozen, marked).
+var status := {}
+var _rally_t := 0.0
+var _rally_speed := 1.0
+var _rally_dmg := 1.0
+var tint := Color(1, 1, 1)
 
 var main = null
 var player = null
@@ -45,6 +67,8 @@ var _summon_t := 9.0
 
 # Boss patterns. Each boss has one signature move on a cooldown; _cast_phase
 # runs 0 wind-up -> 1 commit, so the telegraph and the hit cannot drift apart.
+# Data-driven bosses keep this clock and let their BossController choose
+# what each wind-up and commit actually is.
 var _cast_t := 5.0
 var _cast_phase := 0
 var _cast_dir := Vector2.ZERO
@@ -56,13 +80,6 @@ var affix := ""
 var _affix_t := 0.0
 var _shielded := false
 
-# Walk-cycle sheets built by tools/build_sprites.gd from assets/packs/. Frame
-# counts must match what that tool reports; an entry missing here (or a sheet
-# that fails to load) just falls back to the procedural _draw_* body below.
-const WALK_SHEETS := {
-	"skeleton": 9, "husk": 9, "wisp": 9, "bogling": 9, "mire": 9,
-	"imp": 9, "titan": 9, "herald": 8, "maw": 8, "cinderking": 8,
-}
 const WALK_FPS := 10.0
 
 var _spr: Sprite2D = null
@@ -71,8 +88,24 @@ var _spr_facing := 0.0
 
 
 func is_boss() -> bool:
+	if data != null:
+		return data.is_boss
 	return etype == "herald" or etype == "maw" or etype == "cinderking"
 
+
+func has_tag(t: String) -> bool:
+	return data != null and data.tags.has(t)
+
+
+func set_targetable(on: bool) -> void:
+	# Weapons find targets through the "enemies" group, so leaving it is what
+	# makes a burrowed or submerged foe genuinely unhittable. "hostiles" is
+	# kept either way so stage cleanup still finds it.
+	untargetable = not on
+	if on:
+		add_to_group("enemies")
+	elif is_in_group("enemies"):
+		remove_from_group("enemies")
 
 
 func _dashes() -> bool:
@@ -81,6 +114,9 @@ func _dashes() -> bool:
 
 func setup(p_type: String, pos: Vector2, hp_m: float, dmg_m: float) -> void:
 	etype = p_type
+	var gm = Engine.get_main_loop().root.get_node_or_null("GameManager") if Engine.get_main_loop() else null
+	if gm:
+		data = gm.CONTENT.enemy(p_type)
 	var d: Dictionary = TYPES[p_type]
 	max_hp = float(d["hp"]) * hp_m
 	hp = max_hp
@@ -88,6 +124,13 @@ func setup(p_type: String, pos: Vector2, hp_m: float, dmg_m: float) -> void:
 	speed = float(d["speed"])
 	xp_value = int(d["xp"])
 	body_radius = float(d["radius"])
+	if data:
+		tint = data.tint
+		is_boss_object = data.has_tag("summon")
+		if data.behavior:
+			behavior = data.behavior.new()
+			behavior.attach(self, data.behavior_params)
+			add_child(behavior)
 	_make_sprite()
 	position = pos
 	_dash_t = randf_range(0.5, 1.5)
@@ -96,14 +139,15 @@ func setup(p_type: String, pos: Vector2, hp_m: float, dmg_m: float) -> void:
 
 
 func _make_sprite() -> void:
-	if not WALK_SHEETS.has(etype):
+	var frames := data.walk_frames if data else 0
+	if frames <= 0:
 		return
 	var tex: Texture2D = load("res://assets/sprites/%s_walk.png" % etype)
 	if tex == null:
 		return
 	_spr = Sprite2D.new()
 	_spr.texture = tex
-	_spr.hframes = int(WALK_SHEETS[etype])
+	_spr.hframes = frames
 	# Draw under the node's own _draw(), so the shadow, elite aura and hit
 	# flash still land on top of the body.
 	_spr.show_behind_parent = true
@@ -112,6 +156,7 @@ func _make_sprite() -> void:
 
 func make_elite(forced := "") -> void:
 	is_elite = true
+	add_to_group("elites")
 	affix = forced if forced != "" else AFFIXES[randi() % AFFIXES.size()]
 	# A splitting elite dies twice over, so it does not also need the full
 	# health bar, and a swift one trades bulk for the speed.
@@ -142,15 +187,57 @@ func make_elite(forced := "") -> void:
 
 func _ready() -> void:
 	add_to_group("enemies")
+	# Never left: stage cleanup sweeps "hostiles" so a burrowed or otherwise
+	# special enemy cannot survive a transition.
+	add_to_group("hostiles")
 	main = get_tree().get_first_node_in_group("main")
 	am = get_node("/root/AudioMan")
 	jm = get_node("/root/JuiceMan")
+
+
+func apply_rally(spd: float, dmg_mult: float, dur: float) -> void:
+	_rally_t = maxf(_rally_t, dur)
+	_rally_speed = maxf(_rally_speed, spd) if _rally_t > 0.0 else spd
+	_rally_dmg = maxf(_rally_dmg, dmg_mult) if _rally_t > 0.0 else dmg_mult
+
+
+func rallied() -> bool:
+	return _rally_t > 0.0
+
+
+func set_status(s: String, dur: float) -> void:
+	status[s] = maxf(float(status.get(s, 0.0)), dur)
+
+
+func has_status(s: String) -> bool:
+	return float(status.get(s, 0.0)) > 0.0
+
+
+func clear_status(s: String) -> void:
+	status.erase(s)
+
+
+func _tick_status(delta: float) -> void:
+	if status.is_empty():
+		return
+	for k in status.keys():
+		var v: float = float(status[k]) - delta
+		if v <= 0.0:
+			status.erase(k)
+		else:
+			status[k] = v
 
 
 func _physics_process(delta: float) -> void:
 	if dead:
 		return
 	_anim += delta
+	_tick_status(delta)
+	if _rally_t > 0.0:
+		_rally_t -= delta
+		if _rally_t <= 0.0:
+			_rally_speed = 1.0
+			_rally_dmg = 1.0
 	if _flash > 0.0:
 		_flash -= delta
 		if _flash <= 0.0:
@@ -166,8 +253,12 @@ func _physics_process(delta: float) -> void:
 	var to_p: Vector2 = player.global_position - global_position
 	var dist := to_p.length()
 	var dir := to_p / dist if dist > 1.0 else Vector2.ZERO
-	var spd := speed * slow_mult
-	if _dashes():
+	var spd := speed * slow_mult * env_speed * _rally_speed
+	if controller:
+		spd *= controller.speed_scale()
+	if behavior:
+		dir = behavior.step(delta, dir)
+	elif _dashes():
 		_dash_t -= delta
 		if _dash_phase == 0:
 			spd *= 0.45
@@ -181,12 +272,15 @@ func _physics_process(delta: float) -> void:
 			if _dash_t <= 0.0:
 				_dash_phase = 0
 				_dash_t = randf_range(0.8, 1.4)
-	velocity = dir * spd + _kb
-	# A maw mid-charge is carried by _kb, so it must not be damped like a
+	velocity = dir * spd + _kb + push
+	push = Vector2.ZERO
+	# A charging boss is carried by _kb, so it must not be damped like a
 	# knockback or the lunge dies a frame after it starts.
-	var damp := 380.0 if (etype == "maw" and _cast_phase == 0 and _kb.length() > 300.0) else 900.0
+	var damp := 380.0 if (is_boss() and _cast_phase == 0 and _kb.length() > 300.0) else 900.0
 	_kb = _kb.move_toward(Vector2.ZERO, damp * delta)
 	move_and_slide()
+	if main and main.director and is_instance_valid(main.director) and not main.director.obstacles.is_empty():
+		position = main.director.resolve(position, body_radius * 0.8)
 	if _spr != null:
 		_spr.frame = int(_anim * WALK_FPS) % _spr.hframes
 		# The art is drawn facing south: heads, snouts and outstretched hands all
@@ -195,10 +289,13 @@ func _physics_process(delta: float) -> void:
 			_spr_facing = velocity.angle() - PI * 0.5
 		_spr.rotation = _spr_facing - rotation
 		var f := clampf(_flash / 0.12, 0.0, 1.0)
-		_spr.modulate = Color(1.0, 1.0, 1.0).lerp(Color(2.4, 2.0, 2.0), f)
+		_spr.modulate = tint.lerp(Color(2.4, 2.0, 2.0), f)
 	_tick -= delta
-	if _tick <= 0.0 and dist < body_radius + 22.0 and bool(player.get("alive")):
-		player.take_damage(dmg)
+	if _tick <= 0.0 and dist < body_radius + 22.0 and _can_contact():
+		var hit := dmg * _rally_dmg
+		if main and main.combat:
+			hit = main.combat.contact_damage(self, hit)
+		player.take_damage(hit, "enemy:" + etype)
 		if is_elite and affix == "vampiric":
 			# Feeds on what it hits, so ignoring it is not a strategy.
 			hp = minf(max_hp, hp + dmg * 2.5)
@@ -217,50 +314,77 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
+func _can_contact() -> bool:
+	if dmg <= 0.0 or untargetable or not bool(player.get("alive")):
+		return false
+	if behavior and not behavior.can_contact():
+		return false
+	if controller and controller.untargetable():
+		return false
+	return true
+
+
 # --- boss patterns -------------------------------------------------------
 #
-# Before this, all three bosses walked at you and summoned skeletons every nine
-# seconds. With three boss bodies across eight stages that is the same fight
-# eight times over, so each one now has a signature move.
+# Bosses without a BossData controller (Rotgrove, and bosses spawned directly
+# by tests) keep the original signature move per body. Data-driven bosses
+# route every wind-up and commit through their controller.
 
 const CAST_GAP := {"herald": 6.5, "maw": 7.5, "cinderking": 6.0}
 const WINDUP := {"herald": 0.85, "maw": 1.0, "cinderking": 0.7}
 
 
 func _aura_color() -> Color:
+	if controller:
+		return controller.data.aura
 	if main and main.gm and main.gm.has_method("stage_data"):
 		return main.gm.stage_data().get("boss_aura", Color(1.0, 0.5, 0.2))
 	return Color(1.0, 0.5, 0.2)
 
 
 func _step_boss(delta: float, dir: Vector2) -> void:
-	# Enrage once, at 40%. The fight should get louder as it closes out.
-	if not _enraged and hp < max_hp * 0.4:
-		_enraged = true
-		speed *= 1.25
-		if jm:
-			jm.add_trauma(0.5)
-		if main and main.hud and main.hud.has_method("show_warning"):
-			main.hud.show_warning("ENRAGED")
-	_summon_t -= delta
-	if _summon_t <= 0.0:
-		_summon_t = 6.0 if _enraged else 9.0
-		if main and main.has_method("summon_minions"):
-			main.summon_minions(global_position)
+	if controller:
+		controller.tick(delta, dir)
+	else:
+		# Enrage once, at 40%. The fight should get louder as it closes out.
+		if not _enraged and hp < max_hp * 0.4:
+			_enraged = true
+			speed *= 1.25
+			if jm:
+				jm.add_trauma(0.5)
+			if main and main.hud and main.hud.has_method("show_warning"):
+				main.hud.show_warning("ENRAGED")
+		_summon_t -= delta
+		if _summon_t <= 0.0:
+			_summon_t = 6.0 if _enraged else 9.0
+			if main and main.has_method("summon_minions"):
+				main.summon_minions(global_position)
 	_cast_t -= delta
 	if _cast_t > 0.0:
 		return
 	if _cast_phase == 0:
 		# Wind up: paint the telegraph, hold still enough to be read.
-		_cast_phase = 1
 		_cast_dir = dir
-		_cast_t = float(WINDUP.get(etype, 0.85))
-		_telegraph()
+		if controller:
+			var w: float = controller.begin_cast(dir)
+			if w < 0.0:
+				# Nothing fits the hazard budget yet; look again shortly.
+				_cast_t = 0.5
+				return
+			_cast_phase = 1
+			_cast_t = w
+		else:
+			_cast_phase = 1
+			_cast_t = float(WINDUP.get(etype, 0.85))
+			_telegraph()
 	else:
 		_cast_phase = 0
-		var gap := float(CAST_GAP.get(etype, 6.5))
-		_cast_t = gap * (0.62 if _enraged else 1.0)
-		_commit()
+		if controller:
+			_cast_t = controller.commit_cast()
+		else:
+			var gap := float(CAST_GAP.get(etype, 6.5))
+			_cast_t = gap * (0.62 if _enraged else 1.0)
+			_commit()
 
 
 func _telegraph() -> void:
@@ -292,6 +416,11 @@ func _telegraph() -> void:
 
 
 func _commit() -> void:
+	if controller:
+		# Tests and debug tools may force a commit directly; it means the same
+		# thing as the cast clock reaching it.
+		controller.commit_cast()
+		return
 	if main == null or not main.has_method("spawn_hazard"):
 		return
 	var col := _aura_color()
@@ -362,8 +491,10 @@ func _step_elite(delta: float) -> void:
 				queue_redraw()
 
 
-func take_damage(amount: float, from_pos: Vector2, knockback: float) -> void:
-	if dead:
+func take_damage(amount: float, from_pos: Vector2, knockback: float, source := "") -> void:
+	if dead or untargetable:
+		return
+	if controller and controller.untargetable():
 		return
 	if _shielded:
 		# The ward eats the hit whole, then has to be rebuilt. Burst it or work
@@ -377,6 +508,14 @@ func take_damage(amount: float, from_pos: Vector2, knockback: float) -> void:
 			jm.shockwave(global_position, AFFIX_COLORS["warded"], 70.0)
 		queue_redraw()
 		return
+	if main and main.combat:
+		amount = main.combat.modify_hit(self, amount, source, knockback)
+	if behavior:
+		amount = behavior.modify_damage(amount, from_pos, source)
+	if controller:
+		amount = controller.modify_damage(amount, from_pos, source)
+	if main and main.gm and main.gm.run_stats:
+		main.gm.run_stats.add_damage(source, minf(amount, maxf(hp, 0.0)))
 	hp -= amount
 	_flash = 0.12
 	var away: Vector2 = global_position - from_pos
@@ -384,34 +523,63 @@ func take_damage(amount: float, from_pos: Vector2, knockback: float) -> void:
 	var kbm := 1.0
 	if is_boss():
 		kbm = 0.12
-	if is_elite:
+	if is_elite or is_boss_object or (data and data.speed <= 0.0):
 		kbm = 0.0
+	if main and main.gm:
+		kbm *= main.gm.mods.mult("knockback")
 	_kb += dir * knockback * kbm
 	if main and main.has_method("spawn_damage_number"):
 		main.spawn_damage_number(global_position, amount, Color(1.0, 0.85, 0.4))
 	if hp <= 0.0:
 		dead = true
+		if behavior:
+			behavior.on_death()
 		died.emit()
 		am.play_ranged("enemy_die", -8.0, 0.9, 1.15)
 		jm.death_fx(global_position, is_boss(), etype, _spr_facing)
-		if main and main.has_method("spawn_gem"):
-			main.spawn_gem(global_position, xp_value)
-		if main and main.has_method("spawn_shard"):
-			_roll_shard_drop()
+		_drop_rewards()
+		if main and main.combat:
+			main.combat.on_kill(self, source)
 		if is_elite and affix == "splitting":
 			_split()
+		if controller:
+			controller.cleanup()
 		queue_free()
 	else:
 		am.play_ranged("hit_flesh", -16.0, 0.85, 1.2)
 		queue_redraw()
 
 
+func _drop_rewards() -> void:
+	# Revived dead and boss props give nothing back: raising and killing the
+	# same corpses must never be a farm.
+	if no_credit or revived or main == null:
+		return
+	var profile := data.drop_profile if data else "standard"
+	if profile == "none":
+		return
+	if main.has_method("spawn_gem") and xp_value > 0:
+		main.spawn_gem(global_position, xp_value)
+	if profile == "mimic" and main.has_method("spawn_shard"):
+		for i in 6:
+			main.spawn_shard(global_position + Vector2.from_angle(randf() * TAU) * randf_range(10.0, 40.0), 1)
+		return
+	if main.has_method("spawn_shard"):
+		_roll_shard_drop()
+
+
 func apply_slow(mult: float, dur: float) -> void:
+	if data and data.status_resist.has("slow"):
+		dur *= float(data.status_resist["slow"])
 	if slow_t > 0.0:
 		slow_mult = minf(slow_mult, mult)
 	else:
 		slow_mult = mult
 	slow_t = maxf(slow_t, dur)
+
+
+func is_slowed() -> bool:
+	return slow_t > 0.0 and slow_mult < 0.99
 
 
 
@@ -436,37 +604,66 @@ func _draw() -> void:
 		draw_set_transform(Vector2(0, h * 0.86), 0.0, Vector2(1.0, 0.38))
 		draw_circle(Vector2.ZERO, body_radius * 0.85, Color(0, 0, 0, 0.35))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		_draw_status()
 		if is_elite:
 			_draw_elite_aura()
 		if _flash > 0.0:
 			draw_circle(Vector2.ZERO, body_radius + 2.0, Color(1, 1, 1, 0.35))
 		return
 
-	match etype:
-		"skeleton":
-			_draw_skeleton()
-		"husk":
-			_draw_husk()
-		"wisp":
-			_draw_wisp()
-		"bogling":
-			_draw_bogling()
-		"mire":
-			_draw_mire()
-		"imp":
-			_draw_imp()
-		"titan":
-			_draw_titan()
-		"herald":
-			_draw_herald()
-		"maw":
-			_draw_maw()
-		"cinderking":
-			_draw_cinderking()
+	if behavior == null or not behavior.draw_body(self):
+		match etype:
+			"skeleton":
+				_draw_skeleton()
+			"husk":
+				_draw_husk()
+			"wisp":
+				_draw_wisp()
+			"bogling":
+				_draw_bogling()
+			"mire":
+				_draw_mire()
+			"imp":
+				_draw_imp()
+			"titan":
+				_draw_titan()
+			"herald":
+				_draw_herald()
+			"maw":
+				_draw_maw()
+			"cinderking":
+				_draw_cinderking()
+			_:
+				draw_circle(Vector2.ZERO, body_radius, Color(0.4, 0.3, 0.35))
+	_draw_status()
 	if is_elite:
 		_draw_elite_aura()
 	if _flash > 0.0:
 		draw_circle(Vector2.ZERO, body_radius + 2.0, Color(1, 1, 1, 0.55))
+
+
+func _draw_status() -> void:
+	# Small, shape-coded status marks: flame tongues for burning, a hex for
+	# frozen, a notch ring for the lance's mark.
+	if status.is_empty() and not rallied():
+		return
+	var r := body_radius + 6.0
+	if has_status("burning"):
+		for i in 3:
+			var a := -PI * 0.5 + (float(i) - 1.0) * 0.5
+			var b := Vector2.from_angle(a) * r
+			draw_colored_polygon(PackedVector2Array([b + Vector2(-4, 0), b + Vector2(4, 0), b + Vector2.from_angle(a) * 10.0]), Color(1, 0.5, 0.15, 0.9))
+	if has_status("frozen"):
+		var pts := PackedVector2Array()
+		for i in 7:
+			pts.append(Vector2.from_angle(TAU * float(i) / 6.0) * r)
+		draw_polyline(pts, Color(0.7, 0.92, 1.0, 0.85), 2.5)
+	if has_status("marked"):
+		for i in 4:
+			var a2 := TAU * float(i) / 4.0 + _anim * 2.0
+			draw_arc(Vector2.ZERO, r + 4.0, a2, a2 + 0.6, 6, Color(0.95, 0.9, 0.75, 0.9), 3.0)
+	if rallied():
+		draw_arc(Vector2(0, -r - 6.0), 5.0, 0.0, TAU, 10, Color(1, 0.8, 0.35, 0.9), 2.0)
 
 
 func _split() -> void:

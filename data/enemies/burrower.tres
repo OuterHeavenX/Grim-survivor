@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/burrower.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"burrower"
+display_name = "Burrower"
+base_hp = 45.0
+base_damage = 14.0
+speed = 150.0
+xp_value = 4
+radius = 17.0
+walk_frames = 0
+tags = PackedStringArray("beast")
+water_response = "ignore"
+drop_profile = "standard"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"warn": 0.9, "lead": 0.6, "surface_time": 4.0, "burrow_time": 2.2, "radius": 70.0}

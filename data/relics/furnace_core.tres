@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/furnace_core.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"furnace_core"
+display_name = "Furnace Core"
+rarity = "rare"
+tags = PackedStringArray("explosion", "cooldown")
+description = "Blast kills hasten every weapon."
+modifiers = {}
+requires_weapons = PackedStringArray("fireball", "ember", "comet")
+icon_color = Color(1, 0.6, 0.2, 1.0)
+discovered_by_default = false
+discover_stage = &"throne_of_cinders"
+effect = ExtResource("2")

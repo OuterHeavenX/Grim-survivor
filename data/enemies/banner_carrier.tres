@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/enemies/behaviors/banner.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"banner_carrier"
+display_name = "Banner Carrier"
+base_hp = 70.0
+base_damage = 9.0
+speed = 85.0
+xp_value = 6
+radius = 18.0
+walk_frames = 0
+tags = PackedStringArray("cultist", "support")
+water_response = "normal"
+drop_profile = "standard"
+is_boss = false
+behavior = ExtResource("2")
+behavior_params = {"radius": 220.0, "max_buffed": 8, "speed_buff": 1.25, "damage_buff": 1.2, "fallen_time": 6.0}

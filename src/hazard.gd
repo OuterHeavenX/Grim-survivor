@@ -23,6 +23,8 @@ var color := Color(1.0, 0.5, 0.2)
 var telegraph := 0.9
 var tick := 0.55
 var lane_to := Vector2.ZERO
+# Who owns the hit, for the run report.
+var source := "boss"
 
 var player = null
 var jm = null
@@ -78,7 +80,7 @@ func _step_bolt(delta: float) -> void:
 	position.x = clampf(position.x, -ARENA, ARENA)
 	position.y = clampf(position.y, -ARENA, ARENA)
 	if _dist_to_player() < radius + 14.0:
-		player.take_damage(damage)
+		player.take_damage(damage, source)
 		if jm:
 			jm.shockwave(global_position, color, radius * 1.6)
 		queue_free()
@@ -90,7 +92,7 @@ func _step_eruption() -> void:
 	# The warning ring has had its moment; this is where it actually hurts.
 	_bit = true
 	if _dist_to_player() < radius:
-		player.take_damage(damage)
+		player.take_damage(damage, source)
 	if jm:
 		jm.shockwave(global_position, color, radius * 1.3)
 		jm.add_trauma(0.18)
@@ -101,7 +103,7 @@ func _step_pool(delta: float) -> void:
 	if _cd > 0.0:
 		return
 	if _dist_to_player() < radius:
-		player.take_damage(damage)
+		player.take_damage(damage, source)
 		_cd = tick
 
 

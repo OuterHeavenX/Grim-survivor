@@ -1,0 +1,151 @@
+[gd_resource type="Resource" script_class="BossData" load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://src/data/boss_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/boss_phase_data.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/boss_attack_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/boss/attacks/cone_sweep.gd" id="4"]
+[ext_resource type="Script" path="res://src/boss/attacks/pillars.gd" id="5"]
+[ext_resource type="Script" path="res://src/boss/attacks/lane_charge.gd" id="6"]
+[ext_resource type="Script" path="res://src/boss/attacks/shield_wall.gd" id="7"]
+[ext_resource type="Script" path="res://src/boss/attacks/gap_ring.gd" id="8"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+id = &"directional_slam"
+impl = ExtResource("4")
+warn = 0.9
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = true
+passive = false
+params = {"radius": 380.0, "half_angle": 0.75, "sweep": 0.0, "active": 0.5, "dmg": 1.2, "aimed": true}
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+id = &"roadblock_pillars"
+impl = ExtResource("5")
+warn = 0.9
+cooldown = 9.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 3, "life": 14.0, "max_pillars": 4}
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("3")
+id = &"shield_bash"
+impl = ExtResource("6")
+warn = 0.95
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"length": 380.0, "speed": 900.0}
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("3")
+id = &"shield_wall"
+impl = ExtResource("7")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = false
+passive = true
+params = {"arc": 1.05, "block": 0.7}
+
+[sub_resource type="Resource" id="s5"]
+script = ExtResource("2")
+threshold = 1.0
+title = "I"
+banner = ""
+cadence = 1.0
+attacks = Array[Resource]([SubResource("s1"), SubResource("s2"), SubResource("s3")])
+passives = Array[Resource]([SubResource("s4")])
+
+[sub_resource type="Resource" id="s6"]
+script = ExtResource("3")
+id = &"pillar_charge"
+impl = ExtResource("6")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = true
+movement_pressure = true
+positional = false
+passive = false
+params = {"length": 640.0, "speed": 1250.0, "target": "pillar"}
+
+[sub_resource type="Resource" id="s7"]
+script = ExtResource("3")
+id = &"shockwave_gaps"
+impl = ExtResource("8")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"inner": 90.0, "outer": 560.0, "gap_half": 0.5, "rot_speed": 0.0, "active": 0.7, "dmg": 1.0, "anchor": "boss", "gaps": 2}
+
+[sub_resource type="Resource" id="s8"]
+script = ExtResource("3")
+id = &"roadblock_pillars"
+impl = ExtResource("5")
+warn = 0.9
+cooldown = 9.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 3, "life": 14.0, "max_pillars": 4}
+
+[sub_resource type="Resource" id="s9"]
+script = ExtResource("2")
+threshold = 0.5
+title = "II"
+banner = "THE SHIELD FALLS"
+cadence = 0.85
+attacks = Array[Resource]([SubResource("s6"), SubResource("s7"), SubResource("s8")])
+passives = Array[Resource]([])
+
+[resource]
+script = ExtResource("1")
+id = &"warden_of_the_road"
+display_name = "WARDEN OF THE ROAD"
+base_enemy = &"cinderking"
+hp_mult = 1.0
+aura = Color(0.9, 0.5, 0.25, 1.0)
+tint = Color(0.75, 0.75, 0.82, 1.0)
+phases = Array[Resource]([SubResource("s5"), SubResource("s9")])
+cast_gap = 5.0
+min_cast_gap = 2.2
+enrage_threshold = 0.3
+enrage_cadence = 0.75
+final_stand_threshold = 0.0
+final_stand_cadence = 0.85
+max_hazards = 18
+min_safe_fraction = 0.35
+min_warn = 0.65
+summon_enemy = &"husk"
+summon_interval = 9.0
+summon_count = 1
+reward_tags = PackedStringArray("armor", "movement", "knockback", "objective")
+intro_text = "None shall pass."
+defeat_text = "THE ROAD IS OPEN"

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/enemy_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"cinderking"
+display_name = "Cinder King"
+base_hp = 4500.0
+base_damage = 40.0
+speed = 90.0
+xp_value = 250
+radius = 56.0
+walk_frames = 8
+tags = PackedStringArray("boss", "heavy")
+water_response = "resist"
+drop_profile = "boss"
+is_boss = true

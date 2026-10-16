@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="BossData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/boss_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"the_rotgrove_maw"
+display_name = "THE ROTGROVE MAW"
+base_enemy = &"maw"
+aura = Color(0.5, 1.0, 0.35, 1.0)
+legacy = true
+summon_enemy = &"skeleton"
+reward_tags = PackedStringArray("summon", "poison")
+phases = Array[Resource]([])

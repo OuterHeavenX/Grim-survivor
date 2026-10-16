@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"blades"
+display_name = "Spinning Blades"
+description = "Blades orbit you, shredding on contact."
+upgrade_description = "More blades, more damage."
+evolution_passive_id = &"haste"
+evolution_name = "Cyclone Shred"
+evolution_description = "A screaming cyclone of blades orbiting you."

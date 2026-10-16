@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"ossuary_lens"
+display_name = "Ossuary Lens"
+rarity = "common"
+tags = PackedStringArray("crit")
+description = "12% of hits strike twice as hard."
+modifiers = {"crit_chance": 0.12}
+requires_weapons = PackedStringArray()
+icon_color = Color(0.95, 0.9, 0.7, 1.0)
+discovered_by_default = true
+discover_stage = &""

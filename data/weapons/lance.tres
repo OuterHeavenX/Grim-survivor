@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[ext_resource path="res://src/data/weapon_data.gd" type="Script" id="1"]
+[resource]
+script = ExtResource("1")
+id = &"lance"
+display_name = "Bone Lance"
+description = "Hurls heavy spears that pierce through whole lines of foes."
+upgrade_description = "More damage, more pierce."
+evolution_passive_id = &"armor"
+evolution_name = "Impaler"
+evolution_description = "A siege spear that skewers everything in its path."

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"ashen_quiver"
+display_name = "Ashen Quiver"
+rarity = "common"
+tags = PackedStringArray("projectile")
+description = "+1 pierce. Weapons ready 8% sooner."
+modifiers = {"pierce": 1.0, "cooldown": 0.92}
+requires_weapons = PackedStringArray()
+icon_color = Color(0.75, 0.78, 0.86, 1.0)
+discovered_by_default = true
+discover_stage = &""

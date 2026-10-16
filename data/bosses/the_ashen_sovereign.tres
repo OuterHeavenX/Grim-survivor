@@ -1,0 +1,166 @@
+[gd_resource type="Resource" script_class="BossData" load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://src/data/boss_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/boss_phase_data.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/boss_attack_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/boss/attacks/cone_sweep.gd" id="4"]
+[ext_resource type="Script" path="res://src/boss/attacks/summon_adds.gd" id="5"]
+[ext_resource type="Script" path="res://src/boss/attacks/eruption_marks.gd" id="6"]
+[ext_resource type="Script" path="res://src/boss/attacks/gap_ring.gd" id="7"]
+[ext_resource type="Script" path="res://src/boss/attacks/lane_charge.gd" id="8"]
+[ext_resource type="Script" path="res://src/boss/attacks/core_expose.gd" id="9"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+id = &"sword_arcs"
+impl = ExtResource("4")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"radius": 440.0, "half_angle": 0.55, "sweep": 1.8, "active": 0.9, "dmg": 1.0}
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+id = &"command_banners"
+impl = ExtResource("5")
+warn = 0.8
+cooldown = 12.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = false
+passive = false
+params = {"etype": "banner_carrier", "count": 1, "max_alive": 2, "ring": 160.0}
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("3")
+id = &"bombardment"
+impl = ExtResource("6")
+warn = 1.1
+cooldown = 0.0
+budget_cost = 6
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 6, "pattern": "scatter", "spread": 280.0, "radius": 76.0, "dmg": 1.0, "linger": 0.0}
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("2")
+threshold = 1.0
+title = "I"
+banner = ""
+cadence = 1.0
+attacks = Array[Resource]([SubResource("s1"), SubResource("s2"), SubResource("s3")])
+passives = Array[Resource]([])
+
+[sub_resource type="Resource" id="s5"]
+script = ExtResource("3")
+id = &"herald_ring"
+impl = ExtResource("7")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = true
+movement_pressure = true
+positional = false
+passive = false
+params = {"inner": 110.0, "outer": 600.0, "gap_half": 0.62, "rot_speed": 0.5, "active": 2.6, "dmg": 1.0, "anchor": "boss", "gaps": 1}
+
+[sub_resource type="Resource" id="s6"]
+script = ExtResource("3")
+id = &"maw_charge"
+impl = ExtResource("8")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = true
+movement_pressure = true
+positional = false
+passive = false
+params = {"length": 560.0, "speed": 1200.0}
+
+[sub_resource type="Resource" id="s7"]
+script = ExtResource("3")
+id = &"sword_arcs"
+impl = ExtResource("4")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"radius": 440.0, "half_angle": 0.55, "sweep": 1.8, "active": 0.9, "dmg": 1.0}
+
+[sub_resource type="Resource" id="s8"]
+script = ExtResource("3")
+id = &"bombardment"
+impl = ExtResource("6")
+warn = 1.1
+cooldown = 0.0
+budget_cost = 6
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 6, "pattern": "scatter", "spread": 280.0, "radius": 76.0, "dmg": 1.0, "linger": 0.0}
+
+[sub_resource type="Resource" id="s9"]
+script = ExtResource("3")
+id = &"core_expose"
+impl = ExtResource("9")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = false
+passive = true
+params = {"window": 2.6, "mult": 1.6}
+
+[sub_resource type="Resource" id="s10"]
+script = ExtResource("2")
+threshold = 0.5
+title = "II"
+banner = "THE THRONE ARMOR BREAKS"
+cadence = 0.85
+attacks = Array[Resource]([SubResource("s5"), SubResource("s6"), SubResource("s7"), SubResource("s8")])
+passives = Array[Resource]([SubResource("s9")])
+
+[resource]
+script = ExtResource("1")
+id = &"the_ashen_sovereign"
+display_name = "THE ASHEN SOVEREIGN"
+base_enemy = &"cinderking"
+hp_mult = 1.0
+aura = Color(1.0, 0.35, 0.12, 1.0)
+tint = Color(1.0, 0.9, 0.85, 1.0)
+phases = Array[Resource]([SubResource("s4"), SubResource("s10")])
+cast_gap = 4.8
+min_cast_gap = 2.0
+enrage_threshold = 0.3
+enrage_cadence = 0.75
+final_stand_threshold = 0.15
+final_stand_cadence = 0.8
+max_hazards = 26
+min_safe_fraction = 0.35
+min_warn = 0.65
+summon_enemy = &"imp"
+summon_interval = 9.0
+summon_count = 2
+reward_tags = PackedStringArray("legendary")
+intro_text = "The last throne."
+defeat_text = "THE SOVEREIGN IS ASH"

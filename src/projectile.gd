@@ -30,6 +30,13 @@ var facing := Vector2.RIGHT
 var bulwark_radius := 180.0
 
 var evo := false
+# Which weapon (or interaction / relic) dealt this damage, for attribution and
+# for the interaction rules. Empty means "derive it from mode".
+var source_id := ""
+# Miasma only: set once a fire blast has detonated this cloud.
+var ignited := false
+
+const MODE_SOURCE := {"blade": "blades", "boom": "", "zap": "lightning"}
 
 var gm = null
 var main = null
@@ -75,9 +82,17 @@ func setup_raven(p_damage: float, pos: Vector2, p_pierce: int) -> void:
 	vel = Vector2.from_angle(randf() * TAU) * 300.0
 
 
+func _src() -> String:
+	if source_id != "":
+		return source_id
+	return str(MODE_SOURCE.get(mode, mode))
+
+
 func _ready() -> void:
 	gm = get_node("/root/GameManager")
 	main = get_tree().get_first_node_in_group("main")
+	if mode == "miasma":
+		add_to_group("miasma_clouds")
 	if mode == "blade":
 		orbit_angle = TAU * float(orbit_index) / float(maxi(1, orbit_count))
 
@@ -140,7 +155,7 @@ func _tick_dagger(delta: float) -> void:
 			continue
 		if _seg_dist(prev, global_position, en.global_position) < 14.0 + float(en.get("body_radius")):
 			_hit[en.get_instance_id()] = true
-			en.take_damage(damage, global_position, 120.0)
+			en.take_damage(damage, global_position, 120.0, _src())
 			_hits += 1
 			if _hits > pierce:
 				queue_free()
@@ -169,9 +184,11 @@ func _explode() -> void:
 	for e in _enemies():
 		var en = e
 		if global_position.distance_to(en.global_position) < aoe + float(en.get("body_radius")):
-			en.take_damage(damage, global_position, 220.0)
+			en.take_damage(damage, global_position, 220.0, _src())
 	if main and main.has_method("spawn_boom"):
 		main.spawn_boom(global_position, aoe)
+	if main and main.combat:
+		main.combat.on_explosion(global_position, aoe, _src())
 	queue_free()
 
 
@@ -184,7 +201,7 @@ func _tick_frost(delta: float) -> void:
 			continue
 		if global_position.distance_to(en.global_position) < ring_radius + float(en.get("body_radius")):
 			_hit[en.get_instance_id()] = true
-			en.take_damage(damage, global_position, 60.0)
+			en.take_damage(damage, global_position, 60.0, _src())
 			en.apply_slow(slow_mult, slow_dur)
 	if _age >= life:
 		queue_free()
@@ -203,7 +220,7 @@ func _tick_blade(delta: float) -> void:
 			continue
 		if global_position.distance_to(en.global_position) < 30.0 + float(en.get("body_radius")):
 			_hit_cd[id] = 0.45
-			en.take_damage(_blade_damage(), global_position, 90.0)
+			en.take_damage(_blade_damage(), global_position, 90.0, _src())
 
 
 func _scythe_damage() -> float:
@@ -227,7 +244,7 @@ func _tick_scythe(delta: float) -> void:
 
 
 			var pull_from: Vector2 = en.global_position + (en.global_position - main.player.global_position).normalized() * (200.0 if evo else 120.0)
-			en.take_damage(_scythe_damage(), pull_from, 220.0 if evo else 150.0)
+			en.take_damage(_scythe_damage(), pull_from, 220.0 if evo else 150.0, _src())
 			get_node("/root/AudioMan").play("scythe_swing", -10.0, randf_range(0.9, 1.1))
 
 
@@ -262,7 +279,7 @@ func _tick_raven(delta: float) -> void:
 			continue
 		if global_position.distance_to(en.global_position) < 20.0 + float(en.get("body_radius")):
 			_hit[en.get_instance_id()] = true
-			en.take_damage(damage, global_position, 60.0)
+			en.take_damage(damage, global_position, 60.0, _src())
 			raven_target = null
 			_hits += 1
 			if _hits >= pierce:
@@ -284,7 +301,7 @@ func _tick_lance(delta: float) -> void:
 			continue
 		if _seg_dist(prev, global_position, en.global_position) < 20.0 + float(en.get("body_radius")):
 			_hit[en.get_instance_id()] = true
-			en.take_damage(damage, global_position, 260.0)
+			en.take_damage(damage, global_position, 260.0, _src())
 			_hits += 1
 			if _hits > pierce:
 				queue_free()
@@ -308,7 +325,7 @@ func _tick_bulwark(delta: float) -> void:
 			if ang_diff > 1.1:
 				continue
 
-			en.take_damage(damage, global_position - facing * 60.0, 520.0)
+			en.take_damage(damage, global_position - facing * 60.0, 520.0, _src())
 	life -= delta
 	if life <= 0.0:
 		queue_free()
@@ -328,7 +345,7 @@ func _tick_miasma(delta: float) -> void:
 		for e in _enemies():
 			var en = e
 			if global_position.distance_to(en.global_position) < cloud_radius + float(en.get("body_radius")):
-				en.take_damage(damage, global_position, 30.0)
+				en.take_damage(damage, global_position, 30.0, _src())
 				en.apply_slow(0.65, slow_dur)
 
 
@@ -340,9 +357,11 @@ func _tick_comet(delta: float) -> void:
 		for e in _enemies():
 			var en = e
 			if global_position.distance_to(en.global_position) < aoe + float(en.get("body_radius")):
-				en.take_damage(damage, global_position, 260.0)
+				en.take_damage(damage, global_position, 260.0, _src())
 		if main and main.has_method("spawn_boom"):
 			main.spawn_boom(global_position, aoe)
+		if main and main.combat:
+			main.combat.on_explosion(global_position, aoe, _src())
 		queue_free()
 
 

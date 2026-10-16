@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/bog_lotus.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"bog_lotus"
+display_name = "Bog Lotus"
+rarity = "common"
+tags = PackedStringArray("healing", "slow")
+description = "Killing a slowed foe heals 1 HP."
+modifiers = {}
+requires_weapons = PackedStringArray()
+icon_color = Color(0.5, 1, 0.6, 1.0)
+discovered_by_default = true
+discover_stage = &""
+effect = ExtResource("2")

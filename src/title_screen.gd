@@ -4,6 +4,7 @@ extends CanvasLayer
 signal start_pressed
 signal weapons_pressed
 signal upgrades_pressed
+signal settings_pressed
 
 var gm = null
 var best_label: Label
@@ -55,6 +56,8 @@ func _ready() -> void:
 		func () -> void: weapons_pressed.emit()))
 	root_page.add_child(_big_button("UPGRADES", Color(0.85, 0.6, 1.0),
 		func () -> void: upgrades_pressed.emit()))
+	root_page.add_child(_big_button("SETTINGS", Color(0.6, 0.75, 0.9),
+		func () -> void: settings_pressed.emit()))
 
 	play_page = VBoxContainer.new()
 	play_page.add_theme_constant_override("separation", 10)
@@ -83,7 +86,7 @@ func _ready() -> void:
 	best_label = _label("", 26, Color(1.0, 0.85, 0.4))
 	vb.add_child(best_label)
 
-	vb.add_child(_label("Move: WASD / arrows, or drag on touch", 22, Color(0.45, 0.5, 0.62)))
+	vb.add_child(_label("Move: WASD / arrows / stick, or drag on touch", 22, Color(0.45, 0.5, 0.62)))
 	vb.add_child(_label("Weapons fire on their own. Grab the gems.", 22, Color(0.45, 0.5, 0.62)))
 
 	sound_btn = Button.new()
@@ -282,6 +285,8 @@ func show_screen() -> void:
 		int(t) / 60, int(t) % 60,
 		int(b.get("kills", 0)), int(b.get("level", 0)), int(b.get("wins", 0)),
 	]
+	if gm.campaign_crowned:
+		best_label.text += "\nCROWNED: THE CAMPAIGN IS WON"
 	shard_label.text = "%d soul shards" % gm.shards
 	visible = true
 

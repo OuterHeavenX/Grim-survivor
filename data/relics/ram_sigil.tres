@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="RelicData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/data/relic_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/relics/effects/ram_sigil.gd" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"ram_sigil"
+display_name = "Ram Sigil"
+rarity = "rare"
+tags = PackedStringArray("knockback")
+description = "+60% knockback. Shoves hit harder."
+modifiers = {"knockback": 1.6}
+requires_weapons = PackedStringArray()
+icon_color = Color(0.85, 0.6, 0.35, 1.0)
+discovered_by_default = false
+discover_stage = &"sunken_road"
+effect = ExtResource("2")

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MetaUpgradeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/data/meta_upgrade_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"scholar"
+display_name = "Scholar's Mind"
+description = "+5% XP gain per rank."
+costs = PackedInt32Array(10, 25, 50, 100, 180)
+per_rank = 5.0
+fmt = "+%d%% XP gain"
+short_fmt = "+%d%%"
+max_rank = 5
+hook = "xp"

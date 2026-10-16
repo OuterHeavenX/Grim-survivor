@@ -1,0 +1,152 @@
+[gd_resource type="Resource" script_class="BossData" load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://src/data/boss_data.gd" id="1"]
+[ext_resource type="Script" path="res://src/data/boss_phase_data.gd" id="2"]
+[ext_resource type="Script" path="res://src/data/boss_attack_data.gd" id="3"]
+[ext_resource type="Script" path="res://src/boss/attacks/lane_charge.gd" id="4"]
+[ext_resource type="Script" path="res://src/boss/attacks/spit_pools.gd" id="5"]
+[ext_resource type="Script" path="res://src/boss/attacks/tether_pull.gd" id="6"]
+[ext_resource type="Script" path="res://src/boss/attacks/submerge.gd" id="7"]
+[ext_resource type="Script" path="res://src/boss/attacks/island_break.gd" id="8"]
+[ext_resource type="Script" path="res://src/boss/attacks/summon_adds.gd" id="9"]
+
+[sub_resource type="Resource" id="s1"]
+script = ExtResource("3")
+id = &"lane_charge"
+impl = ExtResource("4")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"length": 520.0, "speed": 1150.0}
+
+[sub_resource type="Resource" id="s2"]
+script = ExtResource("3")
+id = &"toxic_spit"
+impl = ExtResource("5")
+warn = 0.85
+cooldown = 0.0
+budget_cost = 4
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"count": 4, "radius": 62.0, "life": 6.0, "dmg": 0.3, "spread": 150.0}
+
+[sub_resource type="Resource" id="s3"]
+script = ExtResource("3")
+id = &"tongue_pull"
+impl = ExtResource("6")
+warn = 0.9
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"duration": 2.6, "pull": 120.0, "strain_needed": 1.0, "range": 620.0}
+
+[sub_resource type="Resource" id="s4"]
+script = ExtResource("2")
+threshold = 1.0
+title = "I"
+banner = ""
+cadence = 1.0
+attacks = Array[Resource]([SubResource("s1"), SubResource("s2"), SubResource("s3")])
+passives = Array[Resource]([])
+
+[sub_resource type="Resource" id="s5"]
+script = ExtResource("3")
+id = &"submerge"
+impl = ExtResource("7")
+warn = 1.2
+cooldown = 0.0
+budget_cost = 3
+weight = 1.0
+major = true
+movement_pressure = false
+positional = true
+passive = false
+params = {"candidates": 3, "min_player": 220.0, "radius": 95.0, "dmg": 1.1, "under": 1.6}
+
+[sub_resource type="Resource" id="s6"]
+script = ExtResource("3")
+id = &"island_break"
+impl = ExtResource("8")
+warn = 1.5
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = false
+positional = true
+passive = false
+params = {"sink": 9.0}
+
+[sub_resource type="Resource" id="s7"]
+script = ExtResource("3")
+id = &"mire_growths"
+impl = ExtResource("9")
+warn = 0.8
+cooldown = 10.0
+budget_cost = 0
+weight = 1.0
+major = false
+movement_pressure = false
+positional = false
+passive = false
+params = {"etype": "mire_growth", "count": 2, "max_alive": 3, "ring": 180.0, "no_credit": true}
+
+[sub_resource type="Resource" id="s8"]
+script = ExtResource("3")
+id = &"lane_charge"
+impl = ExtResource("4")
+warn = 1.0
+cooldown = 0.0
+budget_cost = 1
+weight = 1.0
+major = false
+movement_pressure = true
+positional = false
+passive = false
+params = {"length": 520.0, "speed": 1150.0}
+
+[sub_resource type="Resource" id="s9"]
+script = ExtResource("2")
+threshold = 0.5
+title = "II"
+banner = "THE MAW SINKS"
+cadence = 0.9
+attacks = Array[Resource]([SubResource("s5"), SubResource("s6"), SubResource("s7"), SubResource("s8")])
+passives = Array[Resource]([])
+
+[resource]
+script = ExtResource("1")
+id = &"maw_of_the_mire"
+display_name = "MAW OF THE MIRE"
+base_enemy = &"maw"
+hp_mult = 1.0
+aura = Color(0.35, 1.0, 0.45, 1.0)
+tint = Color(1.0, 1.0, 1.0, 1.0)
+phases = Array[Resource]([SubResource("s4"), SubResource("s9")])
+cast_gap = 5.6
+min_cast_gap = 2.4
+enrage_threshold = 0.3
+enrage_cadence = 0.75
+final_stand_threshold = 0.0
+final_stand_cadence = 0.85
+max_hazards = 20
+min_safe_fraction = 0.35
+min_warn = 0.65
+summon_enemy = &"bogling"
+summon_interval = 9.0
+summon_count = 2
+reward_tags = PackedStringArray("poison", "healing", "slow", "area")
+intro_text = "The mire hungers."
+defeat_text = "THE MAW IS STILLED"
