@@ -179,7 +179,8 @@ Writes to `build/web/`. The preset uses two inputs from `web/` (which carries a
   download progress and rotating tips, and an ENTER button that lifts the veil
   once the game is running. That tap is the user gesture browsers require for
   sound, so the altar's music starts with the reveal. It also carries the
-  social-preview meta tags; `web/og-image.png` is copied next to the export by
+  social-preview meta tags; `og-image.png` (repository root, so it is served in
+  either Pages mode) is copied next to the export by
   the Pages workflow. That directory carries a `.gdignore` so Godot does not
 import its own output back into the project — without it, the export sweeps
 copies of its own icons into the pack.
