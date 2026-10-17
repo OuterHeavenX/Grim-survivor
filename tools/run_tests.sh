@@ -16,7 +16,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 GODOT="${GODOT:-godot}"
 SUITES=(test_chars test_elite test_gear test_joy test_stages test_ui
-	test_content test_stage_rules test_bosses test_interactions test_enemies test_pacts test_run)
+	test_content test_stage_rules test_bosses test_interactions test_enemies test_pacts test_recovery test_run)
 BACKUP="$(mktemp)"
 cp project.godot "$BACKUP"
 restore() { cp "$BACKUP" project.godot; rm -f "$BACKUP"; }

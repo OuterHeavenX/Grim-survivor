@@ -62,6 +62,11 @@ func add_proc(kind: String) -> void:
 	interaction_procs[kind] = int(interaction_procs.get(kind, 0)) + 1
 
 
+# Stalls the watchdog recovered from this run, by kind (shown on the end
+# screen so a player can report exactly what happened).
+var recoveries: Array[String] = []
+
+
 func log_event(text: String) -> void:
 	# Bounded: a long run fires many events and the report shows the last few.
 	stage_events.append(text)

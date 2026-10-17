@@ -368,8 +368,12 @@ func _sync_scythe() -> void:
 		s.set("weapon_lvl", int(gm.weapons.get("scythe", 1)))
 		s.call("setup_scythe")
 		scythe_root.add_child(s)
+	# queue_free() only removes a node at the end of the frame, so a loop
+	# waiting for the child count to fall never ends. Detach first.
 	while scythe_root.get_child_count() > want:
-		scythe_root.get_child(scythe_root.get_child_count() - 1).queue_free()
+		var extra := scythe_root.get_child(scythe_root.get_child_count() - 1)
+		scythe_root.remove_child(extra)
+		extra.queue_free()
 	for s in scythe_root.get_children():
 		s.set("weapon_lvl", int(gm.weapons.get("scythe", 1)))
 		s.set("evo", gm.is_evolved("scythe"))
@@ -387,7 +391,9 @@ func _sync_blades() -> void:
 	while blades_root.get_child_count() < want:
 		blades_root.add_child(ProjectileScript.new())
 	while blades_root.get_child_count() > want:
-		blades_root.get_child(blades_root.get_child_count() - 1).queue_free()
+		var extra := blades_root.get_child(blades_root.get_child_count() - 1)
+		blades_root.remove_child(extra)
+		extra.queue_free()
 	var kids := blades_root.get_children()
 	for i in kids.size():
 		var b = kids[i]

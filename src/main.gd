@@ -17,6 +17,7 @@ const PauseScript := preload("res://src/pause_menu.gd")
 const UpgradesScript := preload("res://src/upgrades_ui.gd")
 const WeaponsScript := preload("res://src/weapons_ui.gd")
 const PactsScript := preload("res://src/pacts_ui.gd")
+const WatchdogScript := preload("res://src/watchdog.gd")
 const BgScript := preload("res://src/bg.gd")
 const GroundScript := preload("res://src/ground.gd")
 const FogScript := preload("res://src/fog.gd")
@@ -57,6 +58,7 @@ var pause_menu = null
 var upgrades_ui = null
 var weapons_ui = null
 var pacts_ui = null
+var watchdog = null
 var fog_a: Node2D
 var fog_b: Node2D
 var ground: Node2D
@@ -204,6 +206,10 @@ func _ready() -> void:
 
 	gm.level_changed.connect(_on_level_changed)
 	gm.run_ended.connect(_on_run_ended)
+
+	watchdog = WatchdogScript.new()
+	watchdog.setup(self)
+	add_child(watchdog)
 
 
 func player_joy_wire() -> void:
@@ -432,8 +438,17 @@ func _on_level_changed() -> void:
 		levelup_ui.show_screen(gm.roll_upgrades())
 
 
+func _run_over() -> bool:
+	return gm.state == gm.State.GAMEOVER or gm.state == gm.State.VICTORY or gm.state == gm.State.TITLE
+
+
 func _on_upgrade_chosen() -> void:
 	am.play("ui_click", -10.0)
+	# The run can end in the same frame a level-up opens (a last kill and a
+	# killing blow together). Never resume a finished run from a menu.
+	if _run_over():
+		levelup_ui.hide_screen()
+		return
 	get_tree().paused = false
 	if gm.pending_levelups > 0:
 		gm.state = gm.State.LEVELUP
@@ -566,6 +581,8 @@ func open_relic_altar(altar) -> void:
 func _on_loot_chosen(choice: Dictionary) -> void:
 	am.play("ui_click", -10.0)
 	loot_ui.hide_screen()
+	if _run_over():
+		return
 	get_tree().paused = false
 	am.duck(false)
 	gm.state = gm.State.RUNNING
@@ -605,18 +622,25 @@ func _vacuum_all() -> void:
 
 
 func _on_run_ended(victory: bool) -> void:
-	if player:
-		player.release_joystick()
-		if victory:
-			jm.pillar(player.global_position)
-			lm.flash(player.global_position, Color(0.6, 0.8, 1.0), 2.4, 4.0, 0.6)
+	# Close every other modal and pause first, then show the end screen,
+	# then the flourishes: if anything after the screen fails, the player
+	# still has RESTART and TITLE in front of them.
+	levelup_ui.hide_screen()
+	loot_ui.hide_screen()
+	pause_menu.hide_screen()
 	get_tree().paused = true
+	Engine.time_scale = 1.0
+	end_screen.show_screen(victory, gm.run_time, gm.kills, gm.level, gm.last_banked, gm.run_stats)
 	am.duck(false)
 	if victory:
 		am.play("victory_sting", -2.0)
 	else:
 		am.play("gameover_drone", -2.0)
-	end_screen.show_screen(victory, gm.run_time, gm.kills, gm.level, gm.last_banked, gm.run_stats)
+	if player:
+		player.release_joystick()
+		if victory:
+			jm.pillar(player.global_position)
+			lm.flash(player.global_position, Color(0.6, 0.8, 1.0), 2.4, 4.0, 0.6)
 
 
 func _on_settings_open() -> void:
@@ -721,9 +745,13 @@ func _advance_stage() -> void:
 		director.queue_free()
 	director = null
 	_corpses.clear()
+	# A burst per survivor of the horde used to mean up to 90 particle systems
+	# (3,000+ particles) in one frame on a phone. A handful reads the same.
+	var bursts := 0
 	for e in get_tree().get_nodes_in_group("hostiles"):
-		if e.is_in_group("enemies"):
+		if e.is_in_group("enemies") and bursts < 10:
 			jm.gold_burst(e.global_position)
+			bursts += 1
 		e.queue_free()
 	for group in ["gems", "shards", "relics", "hazards", "stage_objects", "boss_objects",
 			"pillars", "relic_altars", "fallen_banners", "objectives"]:

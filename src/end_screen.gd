@@ -84,6 +84,9 @@ func _label(text: String, fs: int, col: Color) -> Label:
 
 
 func show_screen(victory: bool, time: float, kills: int, level: int, shards_earned: int = 0, stats: RunStats = null) -> void:
+	# Visible before any text is built: a failure in the report must never
+	# leave a paused game with nothing on screen.
+	visible = true
 	is_victory = victory
 	if victory:
 		title_label.text = "VICTORY"
@@ -169,6 +172,8 @@ func report_text(s: RunStats) -> String:
 			var r = gm.CONTENT.relic(id) if gm else null
 			rn.append(r.display_name if r else id)
 		lines.append("RELICS  " + ", ".join(rn))
+	if not s.recoveries.is_empty():
+		lines.append("SAFETY NET  " + ", ".join(s.recoveries).to_upper())
 	return "\n".join(lines)
 
 
